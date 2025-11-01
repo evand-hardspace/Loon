@@ -1,30 +1,50 @@
 package com.evandhardspace.loon
 
 import androidx.compose.foundation.layout.Column
-import androidx.compose.material3.Button
-import androidx.compose.material3.Text
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material.Button
+import androidx.compose.material.Text
 import androidx.compose.runtime.*
-import javax.swing.JFileChooser
+import androidx.compose.runtime.snapshots.SnapshotStateList
+import androidx.compose.ui.Modifier
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.rememberNavController
+import androidx.navigation.toRoute
+import com.evandhardspace.loon.chooser.FileChooserScreen
+import com.evandhardspace.loon.editor.EditorScreen
+import kotlinx.serialization.Serializable
+
+@Serializable
+data object FileChooserRoute
+
+@Serializable
+data class EditorRoute(val selectedPath: String)
 
 @Composable
 fun App() {
-    var selectedDirectory by remember { mutableStateOf<String?>(null) }
-
-    Column {
-        Button(onClick = {
-            val chooser = JFileChooser().apply {
-                fileSelectionMode = JFileChooser.FILES_AND_DIRECTORIES
-            }
-            val result = chooser.showOpenDialog(null)
-            if (result == JFileChooser.APPROVE_OPTION) {
-                selectedDirectory = chooser.selectedFile.absolutePath
-            }
-        }) {
-            Text("Select Directory")
+    val navController = rememberNavController()
+    NavHost(
+        navController = navController,
+        startDestination = FileChooserRoute,
+    ) {
+        composable<FileChooserRoute> {
+            FileChooserScreen(
+                modifier = Modifier.fillMaxSize(),
+                onDirectorySelected = { path ->
+                    println("navigate")
+                    navController.navigate(EditorRoute(path))
+                }
+            )
         }
-
-        selectedDirectory?.let {
-            Text("Selected directory: $it")
+        composable<EditorRoute> {
+            EditorScreen(
+                selectedPath = it.toRoute<EditorRoute>().selectedPath,
+                onBack = { navController.popBackStack() }
+            )
         }
     }
 }
