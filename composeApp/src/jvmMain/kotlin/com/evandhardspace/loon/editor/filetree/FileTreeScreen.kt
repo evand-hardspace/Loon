@@ -22,6 +22,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material.icons.automirrored.filled.InsertDriveFile
 import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.FolderOpen
+import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.TextFieldDefaults
@@ -109,6 +110,11 @@ fun FileNode(
         mutableStateOf(file.listFiles()?.sortedBy { it.name } ?: emptyList())
     }
 
+    // Check if file exists
+    val targetDir = if (file.isDirectory) file else file.parentFile
+    val fileExists = targetDir?.let { File(it, newFileName).exists() } ?: false
+    val fileNameIsBlank = newFileName.isBlank()
+
     // Name input dialog
     if (showNameDialog) {
         Dialog(onDismissRequest = { showNameDialog = false }) {
@@ -135,9 +141,19 @@ fun FileNode(
                                 text = "File name",
                             )
                         },
+                        isError = fileExists,
                         singleLine = true,
                         modifier = Modifier.fillMaxWidth(),
                     )
+
+                    if (fileExists) {
+                        Text(
+                            text = "File already exists",
+                            color = MaterialTheme.colorScheme.error,
+                            style = MaterialTheme.typography.bodySmall,
+                            modifier = Modifier.padding(top = 4.dp)
+                        )
+                    }
 
                     Row(
                         modifier = Modifier
@@ -145,22 +161,27 @@ fun FileNode(
                             .padding(top = 16.dp),
                         horizontalArrangement = Arrangement.End,
                     ) {
-                        TextButton(onClick = {
-                            showNameDialog = false
-                            newFileName = ""
-                        }) {
+                        TextButton(
+                            onClick = {
+                                showNameDialog = false
+                                newFileName = ""
+                            },
+                            shape = MaterialTheme.shapes.small,
+                        ) {
                             Text("Cancel")
                         }
                         Spacer(modifier = Modifier.width(8.dp))
-                        androidx.compose.material3.Button(
+                        Button(
                             onClick = {
-                                if (newFileName.isNotBlank()) {
+                                if (newFileName.isNotBlank() && !fileExists) {
                                     createFileRelativeTo(file, newFileName)
                                     onCreateFile()
                                     showNameDialog = false
                                     newFileName = ""
                                 }
-                            }
+                            },
+                            enabled = !fileNameIsBlank && !fileExists,
+                            shape = MaterialTheme.shapes.small,
                         ) {
                             Text("Create")
                         }
