@@ -60,6 +60,10 @@ fun EditorScreen(
                     onFileClick = {
                         editorViewModel.onFileSelected(it)
                         textEditorViewModel.addHolder(it.path)
+                    },
+                    onDeleteFile = {
+                        editorViewModel.onTabClosed(it)
+                        textEditorViewModel.removeHolder(it.path)
                     }
                 )
             }
