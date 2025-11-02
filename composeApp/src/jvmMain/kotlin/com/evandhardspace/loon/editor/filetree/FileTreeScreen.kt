@@ -1,9 +1,11 @@
 package com.evandhardspace.loon.editor.filetree
 
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.Icon
@@ -12,14 +14,16 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.InsertDriveFile
 import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.FolderOpen
-import androidx.compose.material.icons.filled.InsertDriveFile
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.pointer.PointerEventType
+import androidx.compose.ui.input.pointer.onPointerEvent
 import androidx.compose.ui.unit.dp
 import java.io.File
 
@@ -36,7 +40,7 @@ fun FileTree(
     }
 }
 
-@OptIn(ExperimentalFoundationApi::class)
+@OptIn(ExperimentalFoundationApi::class, ExperimentalComposeUiApi::class)
 @Composable
 fun FileNode(
     file: File,
@@ -44,10 +48,12 @@ fun FileNode(
     onFileClick: (File) -> Unit,
 ) {
     var expanded by remember { mutableStateOf(false) }
+    var isHovered by remember { mutableStateOf(false) }
 
     Row(
         modifier = Modifier
             .padding(start = (level * 16).dp)
+            .fillMaxWidth()
             .clickable {
                 if (file.isDirectory) {
                     expanded = !expanded
@@ -55,6 +61,9 @@ fun FileNode(
                     onFileClick(file)
                 }
             }
+            .onPointerEvent(PointerEventType.Enter) { isHovered = true }
+            .onPointerEvent(PointerEventType.Exit) { isHovered = false }
+            .background(if (isHovered) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.background)
             .padding(vertical = 2.dp)
     ) {
         val icon = when {
@@ -67,10 +76,10 @@ fun FileNode(
             contentDescription = null,
             modifier = Modifier.padding(end = 4.dp),
             tint = MaterialTheme.colorScheme.onBackground,
-            )
+        )
         Text(
             text = file.name.ifEmpty { file.path },
-            color = MaterialTheme.colorScheme.onBackground,
+            color = if (isHovered) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onBackground,
         )
     }
 
