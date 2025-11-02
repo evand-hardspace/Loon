@@ -20,12 +20,15 @@ import androidx.compose.ui.input.key.isMetaPressed
 import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.key.type
+import androidx.compose.ui.input.pointer.PointerIcon
+import androidx.compose.ui.input.pointer.pointerHoverIcon
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import org.jetbrains.skiko.Cursor
 import java.io.File
 
 @Composable
@@ -127,11 +130,10 @@ fun TextEditorScreen(
                         ) {
                             save()
                             true
-                        }  else {
+                        } else {
                             false
                         }
-                    }
-                ,
+                    },
                 textStyle = TextStyle(
                     fontSize = 14.sp,
                     fontFamily = FontFamily.Monospace,
@@ -180,13 +182,22 @@ fun TextEditorScreen(
                 }
                 IconButton(
                     onClick = save,
+                    enabled = isDirty,
                     modifier = Modifier.size(16.dp)
                 ) {
                     Icon(
                         imageVector = Icons.Default.Save,
                         contentDescription = "Save file changes",
                         tint = if (isDirty) Color(0xFF5C9FFF) else Color(0xFF6B6B6B),
-                        modifier = Modifier.size(18.dp)
+                        modifier = Modifier
+                            .size(18.dp)
+                            .then(
+                                if (isDirty) {
+                                    Modifier.pointerHoverIcon(PointerIcon(Cursor(Cursor.HAND_CURSOR)))
+                                } else {
+                                    Modifier
+                                }
+                            )
                     )
                 }
             }

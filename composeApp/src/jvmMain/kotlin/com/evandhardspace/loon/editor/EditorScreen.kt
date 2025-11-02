@@ -57,14 +57,17 @@ fun EditorScreen(
                 }
                 FileTree(
                     root = File(selectedPath),
-                    onFileClick = {
-                        editorViewModel.onFileSelected(it)
-                        textEditorViewModel.addHolder(it.path)
+                    onFileSelect = {
+                        if(it != null && it.isFile) {
+                            editorViewModel.onFileSelected(it)
+                            textEditorViewModel.addHolder(it.path)
+                        }
                     },
                     onDeleteFile = {
                         editorViewModel.onTabClosed(it)
                         textEditorViewModel.removeHolder(it.path)
-                    }
+                    },
+                    selectedFile = textEditorViewModel.selected?.let { File(it) },
                 )
             }
         },

@@ -25,7 +25,6 @@ import androidx.compose.material.icons.filled.FolderOpen
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -34,6 +33,12 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.input.key.KeyEventType
+import androidx.compose.ui.input.key.key
+import androidx.compose.ui.input.key.type
+import androidx.compose.ui.input.key.isMetaPressed
+import androidx.compose.ui.input.key.onKeyEvent
 import androidx.compose.ui.input.pointer.PointerEventType
 import androidx.compose.ui.input.pointer.onPointerEvent
 import androidx.compose.ui.unit.dp
@@ -43,16 +48,18 @@ import kotlinx.coroutines.withContext
 import java.io.File
 import java.nio.file.FileSystems
 import java.nio.file.StandardWatchEventKinds
-import kotlin.random.Random
 
 @Composable
 fun FileTree(
     root: File,
     modifier: Modifier = Modifier,
-    onFileClick: (File) -> Unit,
     onDeleteFile: (File) -> Unit,
+    selectedFile : File?,
+    onFileSelect: (File?) -> Unit,
 ) {
     var refreshTrigger by remember { mutableStateOf(0) }
+    var showNameDialog by remember { mutableStateOf(false) }
+    var newFileName by remember { mutableStateOf("") }
 
     // Watch for external changes
     LaunchedEffect(root) {
@@ -74,50 +81,17 @@ fun FileTree(
         }
     }
 
-    LazyColumn(modifier = modifier) {
-        item {
-            FileNode(
-                file = root,
-                refreshTrigger = refreshTrigger,
-                onFileClick = onFileClick,
-                onCreateFile = { refreshTrigger++ },
-                onDeleteFile = {
-                    onDeleteFile(it)
-                    refreshTrigger++
-                },
-            )
-        }
-    }
-}
-
-@OptIn(ExperimentalFoundationApi::class, ExperimentalComposeUiApi::class)
-@Composable
-fun FileNode(
-    file: File,
-    refreshTrigger: Int,
-    level: Int = 0,
-    onFileClick: (File) -> Unit,
-    onCreateFile: () -> Unit,
-    onDeleteFile: (File) -> Unit,
-) {
-    var expanded by remember { mutableStateOf(false) }
-    var isHovered by remember { mutableStateOf(false) }
-    var showNameDialog by remember { mutableStateOf(false) }
-    var newFileName by remember { mutableStateOf("") }
-
-    // Recalculate children when refreshTrigger changes
-    val children by remember(refreshTrigger, file.absolutePath) {
-        mutableStateOf(file.listFiles()?.sortedBy { it.name } ?: emptyList())
-    }
-
     // Check if file exists
-    val targetDir = if (file.isDirectory) file else file.parentFile
+    val targetDir = selectedFile?.let { if (it.isDirectory) it else it.parentFile }
     val fileExists = targetDir?.let { File(it, newFileName).exists() } ?: false
     val fileNameIsBlank = newFileName.isBlank()
 
     // Name input dialog
     if (showNameDialog) {
-        Dialog(onDismissRequest = { showNameDialog = false }) {
+        Dialog(onDismissRequest = {
+            showNameDialog = false
+            newFileName = ""
+        }) {
             Surface(
                 shape = RoundedCornerShape(8.dp),
                 color = MaterialTheme.colorScheme.surface,
@@ -161,27 +135,23 @@ fun FileNode(
                             .padding(top = 16.dp),
                         horizontalArrangement = Arrangement.End,
                     ) {
-                        TextButton(
-                            onClick = {
-                                showNameDialog = false
-                                newFileName = ""
-                            },
-                            shape = MaterialTheme.shapes.small,
-                        ) {
+                        TextButton(onClick = {
+                            showNameDialog = false
+                            newFileName = ""
+                        }) {
                             Text("Cancel")
                         }
                         Spacer(modifier = Modifier.width(8.dp))
                         Button(
                             onClick = {
-                                if (newFileName.isNotBlank() && !fileExists) {
-                                    createFileRelativeTo(file, newFileName)
-                                    onCreateFile()
+                                if (newFileName.isNotBlank() && !fileExists && selectedFile != null) {
+                                    createFileRelativeTo(selectedFile!!, newFileName)
+                                    refreshTrigger++
                                     showNameDialog = false
                                     newFileName = ""
                                 }
                             },
-                            enabled = !fileNameIsBlank && !fileExists,
-                            shape = MaterialTheme.shapes.small,
+                            enabled = !fileNameIsBlank && !fileExists
                         ) {
                             Text("Create")
                         }
@@ -191,12 +161,66 @@ fun FileNode(
         }
     }
 
+    LazyColumn(
+        modifier = modifier
+            .onKeyEvent { event ->
+                if (event.type == KeyEventType.KeyDown &&
+                    event.isMetaPressed &&
+                    event.key == Key.N &&
+                    selectedFile != null
+                ) {
+                    newFileName = "untitled.txt"
+                    showNameDialog = true
+                    true
+                } else {
+                    false
+                }
+            }
+    ) {
+        item {
+            FileNode(
+                file = root,
+                refreshTrigger = refreshTrigger,
+                selectedFile = selectedFile,
+                onFileSelect = onFileSelect,
+                onCreateFile = {
+                    newFileName = "untitled.txt"
+                    showNameDialog = true
+                },
+                onDeleteFile = {
+                    onDeleteFile(it)
+                    refreshTrigger++
+                },
+            )
+        }
+    }
+}
+
+@OptIn(ExperimentalFoundationApi::class, ExperimentalComposeUiApi::class)
+@Composable
+fun FileNode(
+    file: File,
+    refreshTrigger: Int,
+    selectedFile: File?,
+    onFileSelect: (File) -> Unit,
+    level: Int = 0,
+    onCreateFile: () -> Unit,
+    onDeleteFile: (File) -> Unit,
+) {
+    var expanded by remember { mutableStateOf(false) }
+    var isHovered by remember { mutableStateOf(false) }
+    val isSelected = selectedFile?.absolutePath == file.absolutePath
+
+    // Recalculate children when refreshTrigger changes
+    val children by remember(refreshTrigger, file.absolutePath) {
+        mutableStateOf(file.listFiles()?.sortedBy { it.name } ?: emptyList())
+    }
+
     ContextMenuArea(
         items = {
             listOf(
                 ContextMenuItem("New File") {
-                    newFileName = "untitled.txt"
-                    showNameDialog = true
+                    onCreateFile()
                 },
                 ContextMenuItem("Delete") {
                     deleteFileOrDirectory(file)
@@ -210,15 +234,20 @@ fun FileNode(
                 .padding(start = (level * 16).dp)
                 .fillMaxWidth()
                 .clickable {
+                    onFileSelect(file)
                     if (file.isDirectory) {
                         expanded = !expanded
-                    } else {
-                        onFileClick(file)
                     }
                 }
                 .onPointerEvent(PointerEventType.Enter) { isHovered = true }
                 .onPointerEvent(PointerEventType.Exit) { isHovered = false }
-                .background(if (isHovered) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.background)
+                .background(
+                    when {
+                        isSelected -> MaterialTheme.colorScheme.primaryContainer
+                        isHovered -> MaterialTheme.colorScheme.surfaceVariant
+                        else -> MaterialTheme.colorScheme.background
+                    }
+                )
                 .padding(vertical = 2.dp)
         ) {
             val icon = when {
@@ -230,11 +259,17 @@ fun FileNode(
                 imageVector = icon,
                 contentDescription = null,
                 modifier = Modifier.padding(end = 4.dp),
-                tint = MaterialTheme.colorScheme.onBackground,
+                tint = when {
+                    isSelected -> MaterialTheme.colorScheme.onPrimaryContainer
+                    else -> MaterialTheme.colorScheme.onBackground
+                },
             )
             Text(
                 text = file.name.ifEmpty { file.path },
-                color = if (isHovered) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onBackground,
+                color = when {
+                    isSelected -> MaterialTheme.colorScheme.onPrimaryContainer
+                    else -> MaterialTheme.colorScheme.onBackground
+                },
             )
         }
     }
@@ -245,8 +280,9 @@ fun FileNode(
                 FileNode(
                     file = child,
                     refreshTrigger = refreshTrigger,
+                    selectedFile = selectedFile,
+                    onFileSelect = onFileSelect,
                     level = level + 1,
-                    onFileClick = onFileClick,
                     onCreateFile = onCreateFile,
                     onDeleteFile = onDeleteFile,
                 )
