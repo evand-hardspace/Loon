@@ -35,9 +35,9 @@ fun EditorScreen(
 ) {
     val state by tabViewModel.state.collectAsStateWithLifecycle()
 
-    val selectedFile = state.selectedFile?.path
+    val selectedFile = state.selectedFile
     LaunchedEffect(selectedFile) {
-        textEditorViewModel.changeSelected(selectedFile)
+        textEditorViewModel.changeSelected(selectedFile?.path)
     }
 
     SplitPane(
@@ -60,8 +60,8 @@ fun EditorScreen(
                 FileTree(
                     root = File(selectedPath),
                     onFileSelect = {
+                        tabViewModel.onFileSelected(it)
                         if (it.isFile) {
-                            tabViewModel.onFileSelected(it)
                             textEditorViewModel.addHolder(it.path)
                         }
                     },

@@ -65,7 +65,7 @@ fun TextEditorScreen(
                 contentAlignment = Alignment.Center,
             ) {
                 Text(
-                    text = "Selected item is not a file: $selectedPath",
+                    text = "Selected item is not a text or image file.",
                     color = androidx.compose.material3.MaterialTheme.colorScheme.onPrimary,
                 )
             }

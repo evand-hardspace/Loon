@@ -43,7 +43,10 @@ fun TabPanel(
     Row(
         modifier = modifier.horizontalScroll(rememberScrollState())
     ) {
-        state.tabs.forEach { file ->
+        state
+            .tabs
+            .filter { it.isFile }
+            .forEach { file ->
             val selected = file == state.selectedFile
             var isHovered by remember { mutableStateOf(false) }
             Column(

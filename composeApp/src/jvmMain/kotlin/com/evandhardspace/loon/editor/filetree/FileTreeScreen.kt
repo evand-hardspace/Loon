@@ -38,6 +38,7 @@ import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.type
 import androidx.compose.ui.input.key.isMetaPressed
+import androidx.compose.ui.input.key.isShiftPressed
 import androidx.compose.ui.input.key.onKeyEvent
 import androidx.compose.ui.input.pointer.PointerEventType
 import androidx.compose.ui.input.pointer.onPointerEvent
@@ -48,6 +49,10 @@ import kotlinx.coroutines.withContext
 import java.io.File
 import java.nio.file.FileSystems
 import java.nio.file.StandardWatchEventKinds
+
+enum class CreateType {
+    FILE, FOLDER
+}
 
 @Composable
 fun FileTree(
@@ -60,6 +65,7 @@ fun FileTree(
     var refreshTrigger by remember { mutableStateOf(0) }
     var showNameDialog by remember { mutableStateOf(false) }
     var showDeleteDialog by remember { mutableStateOf(false) }
+    var createType by remember { mutableStateOf(CreateType.FILE) }
     var newFileName by remember { mutableStateOf("") }
 
     // Watch for external changes
@@ -83,8 +89,10 @@ fun FileTree(
     }
 
     // Check if file exists
-    val targetDir = selectedFile?.let { if (it.isDirectory) it else it.parentFile }
-    val fileExists = targetDir?.let { File(it, newFileName).exists() } ?: false
+    val targetDir = selectedFile?.takeIf { it.isDirectory }
+        ?: selectedFile?.parentFile
+        ?: root
+    val fileExists = File(targetDir, newFileName).exists()
     val fileNameIsBlank = newFileName.isBlank()
 
     // Name input dialog
@@ -102,7 +110,7 @@ fun FileTree(
                     modifier = Modifier.padding(16.dp)
                 ) {
                     Text(
-                        text = "New File Name",
+                        text = if (createType == CreateType.FILE) "New File Name" else "New Folder Name",
                         style = MaterialTheme.typography.titleMedium,
                         color = MaterialTheme.colorScheme.onBackground,
                         modifier = Modifier.padding(bottom = 8.dp)
@@ -113,7 +121,7 @@ fun FileTree(
                         onValueChange = { newFileName = it },
                         label = {
                             Text(
-                                text = "File name",
+                                text = if (createType == CreateType.FILE) "File name" else "Folder name",
                             )
                         },
                         isError = fileExists,
@@ -123,7 +131,7 @@ fun FileTree(
 
                     if (fileExists) {
                         Text(
-                            text = "File already exists",
+                            text = if (createType == CreateType.FILE) "File already exists" else "Folder already exists",
                             color = MaterialTheme.colorScheme.error,
                             style = MaterialTheme.typography.bodySmall,
                             modifier = Modifier.padding(top = 4.dp)
@@ -146,7 +154,11 @@ fun FileTree(
                         Button(
                             onClick = {
                                 if (newFileName.isNotBlank() && !fileExists) {
-                                    createFileRelativeTo(selectedFile ?: root, newFileName)
+                                    if (createType == CreateType.FILE) {
+                                        createFileRelativeTo(selectedFile ?: root, newFileName)
+                                    } else {
+                                        createFolderRelativeTo(selectedFile ?: root, newFileName)
+                                    }
                                     refreshTrigger++
                                     showNameDialog = false
                                     newFileName = ""
@@ -233,7 +245,18 @@ fun FileTree(
                     event.type == KeyEventType.KeyDown &&
                             event.isMetaPressed &&
                             event.key == Key.N  ->{
+                        createType = CreateType.FILE
                         newFileName = "untitled.txt"
+                        showNameDialog = true
+                        true
+                    }
+                    // Cmd+Shift+N for new folder
+                    event.type == KeyEventType.KeyDown &&
+                            event.isMetaPressed &&
+                            event.isShiftPressed &&
+                            event.key == Key.N  ->{
+                        createType = CreateType.FOLDER
+                        newFileName = "untitled"
                         showNameDialog = true
                         true
                     }
@@ -250,7 +273,13 @@ fun FileTree(
                 selectedFile = selectedFile,
                 onFileSelect = onFileSelect,
                 onCreateFile = {
+                    createType = CreateType.FILE
                     newFileName = "untitled.txt"
+                    showNameDialog = true
+                },
+                onCreateFolder = {
+                    createType = CreateType.FOLDER
+                    newFileName = "untitled"
                     showNameDialog = true
                 },
                 onDeleteFile = {
@@ -272,6 +301,7 @@ fun FileNode(
     onFileSelect: (File) -> Unit,
     level: Int = 0,
     onCreateFile: () -> Unit,
+    onCreateFolder: () -> Unit,
     onDeleteFile: (File) -> Unit,
 ) {
     var expanded by remember { mutableStateOf(false) }
@@ -288,6 +318,9 @@ fun FileNode(
             listOf(
                 ContextMenuItem("New File") {
                     onCreateFile()
+                },
+                ContextMenuItem("New Folder") {
+                    onCreateFolder()
                 },
                 ContextMenuItem("Delete") {
                     deleteFileOrDirectory(root, file)
@@ -352,6 +385,7 @@ fun FileNode(
                     onFileSelect = onFileSelect,
                     level = level + 1,
                     onCreateFile = onCreateFile,
+                    onCreateFolder = onCreateFolder,
                     onDeleteFile = onDeleteFile,
                 )
             }
@@ -360,11 +394,9 @@ fun FileNode(
 }
 
 fun createFileRelativeTo(selected: File, newFileName: String): File {
-    val targetDir = if (selected.isDirectory) {
-        selected
-    } else {
-        selected.parentFile ?: error("Selected file has no parent")
-    }
+    val targetDir = selected.takeIf { it.isDirectory }
+        ?: selected.parentFile
+        ?: error("Selected file has no parent")
 
     val newFile = File(targetDir, newFileName)
     if (!newFile.exists()) {
@@ -374,6 +406,21 @@ fun createFileRelativeTo(selected: File, newFileName: String): File {
         println("File already exists: ${newFile.absolutePath}")
     }
     return newFile
+}
+
+fun createFolderRelativeTo(selected: File, newFolderName: String): File {
+    val targetDir = selected.takeIf { it.isDirectory }
+        ?: selected.parentFile
+        ?: error("Selected file has no parent")
+
+    val newFolder = File(targetDir, newFolderName)
+    if (!newFolder.exists()) {
+        newFolder.mkdirs()
+        println("Created folder: ${newFolder.absolutePath}")
+    } else {
+        println("Folder already exists: ${newFolder.absolutePath}")
+    }
+    return newFolder
 }
 
 fun deleteFileOrDirectory(root: File, target: File): Boolean {
