@@ -145,8 +145,8 @@ fun FileTree(
                         Spacer(modifier = Modifier.width(8.dp))
                         Button(
                             onClick = {
-                                if (newFileName.isNotBlank() && !fileExists && selectedFile != null) {
-                                    createFileRelativeTo(selectedFile!!, newFileName)
+                                if (newFileName.isNotBlank() && !fileExists) {
+                                    createFileRelativeTo(selectedFile ?: root, newFileName)
                                     refreshTrigger++
                                     showNameDialog = false
                                     newFileName = ""
@@ -232,8 +232,7 @@ fun FileTree(
                     // Cmd+N for new file
                     event.type == KeyEventType.KeyDown &&
                             event.isMetaPressed &&
-                            event.key == Key.N &&
-                            selectedFile != null -> {
+                            event.key == Key.N  ->{
                         newFileName = "untitled.txt"
                         showNameDialog = true
                         true
@@ -360,7 +359,7 @@ fun FileNode(
     }
 }
 
-fun createFileRelativeTo(selected: File, newFileName: String): File? {
+fun createFileRelativeTo(selected: File, newFileName: String): File {
     val targetDir = if (selected.isDirectory) {
         selected
     } else {
