@@ -14,6 +14,12 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.input.key.KeyEventType
+import androidx.compose.ui.input.key.isMetaPressed
+import androidx.compose.ui.input.key.key
+import androidx.compose.ui.input.key.onKeyEvent
+import androidx.compose.ui.input.key.type
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -41,7 +47,23 @@ fun EditorScreen(
     }
 
     SplitPane(
-        modifier = modifier.background(MaterialTheme.colorScheme.background),
+        modifier = modifier
+            .background(MaterialTheme.colorScheme.background)
+            .onKeyEvent { event ->
+                when {
+                    event.type == KeyEventType.KeyDown &&
+                            event.isMetaPressed &&
+                            event.key == Key.W -> {
+                        state.selectedFile?.let {
+                            tabViewModel.onTabClosed(it)
+                            textEditorViewModel.removeHolder(it.path)
+                        }
+                        true
+                    }
+
+                    else -> false
+                }
+            },
         leftContent = {
             Column(modifier = Modifier.padding(start = 8.dp)) {
                 IconButton(
