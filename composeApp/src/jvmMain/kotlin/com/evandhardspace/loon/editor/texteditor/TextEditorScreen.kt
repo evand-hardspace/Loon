@@ -33,11 +33,34 @@ fun TextEditorScreen(
     getLineCount: () -> Int,
     updateText: (TextFieldValue) -> Unit,
 ) {
-    if (selectedPath == null || File(selectedPath).let { file ->
+    when {
+        selectedPath == null -> {
+            Box(
+                modifier = modifier.fillMaxWidth(),
+                contentAlignment = Alignment.Center,
+            ) {
+                Text(
+                    text = "File is not selected",
+                    color = androidx.compose.material3.MaterialTheme.colorScheme.onBackground,
+                )
+            }
+            return
+        }
+
+        File(selectedPath).let { file ->
             file.isFile.not() || file.extension != "txt"
-        }) {
-        Text("Selected item is not a file: $selectedPath")
-        return
+        } -> {
+            Box(
+                modifier = modifier.fillMaxWidth(),
+                contentAlignment = Alignment.Center,
+            ) {
+                Text(
+                    text = "Selected item is not a file: $selectedPath",
+                    color = androidx.compose.material3.MaterialTheme.colorScheme.onPrimary,
+                )
+            }
+            return
+        }
     }
 
     Column(
@@ -45,67 +68,17 @@ fun TextEditorScreen(
             .fillMaxSize()
             .background(Color(0xFF181818))
     ) {
-        // Top toolbar - thinner and more minimal
-        Surface(
-            modifier = Modifier.fillMaxWidth(),
-            color = Color(0xFF202020),
-            elevation = 0.dp
-        ) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = File(selectedPath).name,
-                        style = TextStyle(
-                            fontSize = 13.sp,
-                            fontFamily = FontFamily.Monospace,
-                            color = Color(0xFFE6E6E6),
-                            fontWeight = FontWeight.Medium
-                        )
-                    )
-                    if (isDirty) {
-                        Box(
-                            modifier = Modifier
-                                .size(6.dp)
-                                .background(Color(0xFF5C9FFF), shape = MaterialTheme.shapes.small)
-                        )
-                    }
-                }
-
-                IconButton(
-                    onClick = save,
-                    modifier = Modifier.size(32.dp)
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Save,
-                        contentDescription = "Save file changes",
-                        tint = if (isDirty) Color(0xFF5C9FFF) else Color(0xFF6B6B6B),
-                        modifier = Modifier.size(18.dp)
-                    )
-                }
-            }
-        }
-
         // Editor area with line numbers
         Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .weight(1f)
         ) {
-            // Line numbers column
             val lineCount = getLineCount()
             Column(
                 modifier = Modifier
                     .background(Color(0xFF181818))
-                    .padding(horizontal = 16.dp, vertical = 12.dp)
+                    .padding(horizontal = 8.dp, vertical = 12.dp)
                     .verticalScroll(rememberScrollState()),
                 horizontalAlignment = Alignment.End
             ) {
@@ -175,12 +148,27 @@ fun TextEditorScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 16.dp, vertical = 4.dp),
-                horizontalArrangement = Arrangement.spacedBy(20.dp),
-                verticalAlignment = Alignment.CenterVertically
+                horizontalArrangement = Arrangement.SpaceBetween,
             ) {
-                StatusBarItem("Ln ${getLineCount()}")
-                StatusBarItem("${getCharCount()} chars")
-                StatusBarItem("${getWordCount()} words")
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(20.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    StatusBarItem("Ln ${getLineCount()}")
+                    StatusBarItem("${getCharCount()} chars")
+                    StatusBarItem("${getWordCount()} words")
+                }
+                IconButton(
+                    onClick = save,
+                    modifier = Modifier.size(16.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Save,
+                        contentDescription = "Save file changes",
+                        tint = if (isDirty) Color(0xFF5C9FFF) else Color(0xFF6B6B6B),
+                        modifier = Modifier.size(18.dp)
+                    )
+                }
             }
         }
     }

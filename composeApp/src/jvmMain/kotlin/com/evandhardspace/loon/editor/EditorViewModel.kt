@@ -5,32 +5,33 @@ import androidx.lifecycle.ViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
+import java.io.File
 
 class EditorViewModel : ViewModel() {
     private val _state = MutableStateFlow(EditorState())
     val state = _state.asStateFlow()
 
-    fun onFileSelected(filePath: String) {
-        if(filePath in state.value.tabs) {
+    fun onFileSelected(file: File) {
+        if (file in state.value.tabs) {
             _state.update {
                 it.copy(
-                    selectedFile = filePath
+                    selectedFile = file
                 )
             }
         } else {
             _state.update {
                 it.copy(
-                    tabs = it.tabs + filePath,
-                    selectedFile = filePath,
+                    tabs = it.tabs + file,
+                    selectedFile = file,
                 )
             }
         }
     }
 
-    fun onFileClosed(fileName: String) {
-        if(fileName !in state.value.tabs) return
+    fun onTabClosed(file: File) {
+        if (file !in state.value.tabs) return
         _state.update {
-            val newTabs = it.tabs - fileName
+            val newTabs = it.tabs - file
             it.copy(
                 tabs = newTabs,
                 selectedFile = if (newTabs.contains(it.selectedFile)) it.selectedFile else newTabs.lastOrNull()
@@ -41,6 +42,6 @@ class EditorViewModel : ViewModel() {
 
 @Immutable
 data class EditorState(
-    val tabs: List<String> = emptyList(),
-    val selectedFile: String? = null,
+    val tabs: List<File> = emptyList(),
+    val selectedFile: File? = null,
 )

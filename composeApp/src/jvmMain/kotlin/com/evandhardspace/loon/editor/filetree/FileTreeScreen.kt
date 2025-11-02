@@ -13,6 +13,7 @@ import androidx.compose.material.icons.automirrored.filled.InsertDriveFile
 import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.FolderOpen
 import androidx.compose.material.icons.filled.InsertDriveFile
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -26,7 +27,7 @@ import java.io.File
 fun FileTree(
     root: File,
     modifier: Modifier = Modifier,
-    onFileClick: (File) -> Unit = {}
+    onFileClick: (File) -> Unit = {},
 ) {
     LazyColumn(modifier = modifier) {
         item {
@@ -40,7 +41,7 @@ fun FileTree(
 fun FileNode(
     file: File,
     level: Int = 0,
-    onFileClick: (File) -> Unit
+    onFileClick: (File) -> Unit,
 ) {
     var expanded by remember { mutableStateOf(false) }
 
@@ -61,8 +62,16 @@ fun FileNode(
             file.isDirectory -> Icons.Default.Folder
             else -> Icons.AutoMirrored.Filled.InsertDriveFile
         }
-        Icon(icon, contentDescription = null, modifier = Modifier.padding(end = 4.dp))
-        Text(file.name.ifEmpty { file.path })
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            modifier = Modifier.padding(end = 4.dp),
+            tint = MaterialTheme.colorScheme.onBackground,
+            )
+        Text(
+            text = file.name.ifEmpty { file.path },
+            color = MaterialTheme.colorScheme.onBackground,
+        )
     }
 
     if (expanded && file.isDirectory) {

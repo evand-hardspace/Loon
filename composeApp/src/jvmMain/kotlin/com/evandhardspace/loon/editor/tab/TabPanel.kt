@@ -9,58 +9,59 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.evandhardspace.loon.editor.EditorState
+import java.io.File
 
 @Composable
 fun TabPanel(
     modifier: Modifier = Modifier,
     state: EditorState,
-    onFileSelected: (String) -> Unit,
-    onFileClosed: (String) -> Unit,
+    onFileSelected: (File) -> Unit,
+    onFileClosed: (File) -> Unit,
 ) {
     if (state.tabs.isEmpty()) {
         Spacer(Modifier.height(20.dp))
         return
     }
-    Column(modifier) {
-        Row(
-            modifier = Modifier.horizontalScroll(rememberScrollState())
-        ) {
-            state.tabs.forEach { fileName ->
-                val selected = fileName == state.selectedFile
-                Tab(
-                    selected = fileName == state.selectedFile,
-                    selectedContentColor = MaterialTheme.colorScheme.onPrimary,
-                    unselectedContentColor = MaterialTheme.colorScheme.onBackground,
-                    onClick = { onFileSelected(fileName) }
+    Row(
+        modifier = modifier.horizontalScroll(rememberScrollState())
+    ) {
+        state.tabs.forEach { file ->
+            val selected = file == state.selectedFile
+            Column(
+                modifier = Modifier
+                    .clickable(onClick = { onFileSelected(file) })
+                    .background(if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.background),
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier
+                        .background(MaterialTheme.colorScheme.background)
+                        .padding(horizontal = 8.dp, vertical = 4.dp)
                 ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
+                    Text(
+                        text = file.name,
+                        color = MaterialTheme.colorScheme.onPrimary,
+                        modifier = Modifier.padding(end = 4.dp)
+                    )
+                    Icon(
+                        imageVector = Icons.Default.Close,
+                        contentDescription = "Close $file",
+                        tint = MaterialTheme.colorScheme.onPrimary,
                         modifier = Modifier
-                            .background(if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.background)
-                            .padding(horizontal = 8.dp, vertical = 4.dp)
-                    ) {
-                        Text(
-                            text = fileName,
-                            modifier = Modifier.padding(end = 4.dp)
-                        )
-                        Icon(
-                            imageVector = Icons.Default.Close,
-                            contentDescription = "Close $fileName",
-                            modifier = Modifier
-                                .size(16.dp)
-                                .clickable {
-                                    onFileClosed(fileName)
-                                }
-                        )
-                    }
+                            .size(16.dp)
+                            .clickable {
+                                onFileClosed(file)
+                            }
+                    )
                 }
+                Spacer(Modifier.height(3.dp))
             }
         }
     }

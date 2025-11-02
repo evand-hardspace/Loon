@@ -1,4 +1,4 @@
-package com.evandhardspace.loon.utils.ui
+package com.evandhardspace.loon.ui
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectDragGestures
@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.width
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -57,13 +58,22 @@ fun SplitPane(
         }
 
         // Divider
-        Box(
-            modifier = Modifier
-                .fillMaxHeight()
-                .width(6.dp)
-                .pointerHoverIcon(PointerIcon(Cursor(Cursor.E_RESIZE_CURSOR)))
-                .background(if (isDragging) Color.Gray else Color.LightGray)
-        )
+        Row {
+            Box(
+                modifier = Modifier
+                    .fillMaxHeight()
+                    .width(2.dp)
+                    .pointerHoverIcon(PointerIcon(Cursor(Cursor.E_RESIZE_CURSOR)))
+                    .background(if (isDragging) MaterialTheme.colorScheme.onBackground else MaterialTheme.colorScheme.primary)
+            )
+            Box(
+                modifier = Modifier
+                    .fillMaxHeight()
+                    .width(2.dp)
+                    .pointerHoverIcon(PointerIcon(Cursor(Cursor.E_RESIZE_CURSOR)))
+                    .background(MaterialTheme.colorScheme.background)
+            )
+        }
 
         // Right pane
         Box(
