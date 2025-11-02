@@ -45,6 +45,11 @@ fun EditorScreen(
     LaunchedEffect(selectedFile) {
         textEditorViewModel.changeSelected(selectedFile?.path)
     }
+    LaunchedEffect(textEditorViewModel.isDirty, selectedFile) {
+        selectedFile?.let { file ->
+            tabViewModel.setFileDirty(file.absolutePath, textEditorViewModel.isDirty)
+        }
+    }
 
     SplitPane(
         modifier = modifier
@@ -119,7 +124,12 @@ fun EditorScreen(
                     TextEditorScreen(
                         selectedPath = textEditorViewModel.selected,
                         isDirty = textEditorViewModel.isDirty,
-                        save = textEditorViewModel::save,
+                        save = {
+                            textEditorViewModel.save()
+                            state.selectedFile?.let { file ->
+                                tabViewModel.setFileDirty(file.absolutePath, false)
+                            }
+                        },
                         textState = textEditorViewModel.textState,
                         getCharCount = textEditorViewModel::getCharCount,
                         getWordCount = textEditorViewModel::getWordCount,

@@ -5,6 +5,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.Icon
@@ -47,42 +48,54 @@ fun TabPanel(
             .tabs
             .filter { it.isFile }
             .forEach { file ->
-            val selected = file == state.selectedFile
-            var isHovered by remember { mutableStateOf(false) }
-            Column(
-                modifier = Modifier
-                    .clickable(onClick = { onFileSelected(file) })
-                    .onPointerEvent(PointerEventType.Enter) { isHovered = true }
-                    .onPointerEvent(PointerEventType.Exit) { isHovered = false }
-                    .background(if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.background)
-                    .background(if (isHovered) MaterialTheme.colorScheme.primary.copy(alpha = 0.6f) else Color.Transparent),
-            ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
+                val selected = file == state.selectedFile
+                val isDirty = state.dirtyFiles.contains(file.absolutePath)
+                var isHovered by remember { mutableStateOf(false) }
+                Column(
                     modifier = Modifier
-                        .background(MaterialTheme.colorScheme.background)
-                        .background(if (isHovered) MaterialTheme.colorScheme.primary.copy(alpha = 0.6f) else Color.Transparent)
-                        .padding(horizontal = 8.dp, vertical = 4.dp)
+                        .clickable(onClick = { onFileSelected(file) })
+                        .onPointerEvent(PointerEventType.Enter) { isHovered = true }
+                        .onPointerEvent(PointerEventType.Exit) { isHovered = false }
+                        .background(if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.background)
+                        .background(if (isHovered) MaterialTheme.colorScheme.primary.copy(alpha = 0.6f) else Color.Transparent),
                 ) {
-                    Text(
-                        text = file.name,
-                        color = MaterialTheme.colorScheme.onPrimary,
-                        modifier = Modifier.padding(end = 4.dp)
-                    )
-                    Icon(
-                        imageVector = Icons.Default.Close,
-                        contentDescription = "Close $file",
-                        tint = MaterialTheme.colorScheme.onPrimary,
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
                         modifier = Modifier
-                            .size(16.dp)
-                            .clickable {
-                                onFileClosed(file)
-                            }
-                            .pointerHoverIcon(PointerIcon(Cursor(Cursor.HAND_CURSOR)))
-                    )
+                            .background(MaterialTheme.colorScheme.background)
+                            .background(if (isHovered) MaterialTheme.colorScheme.primary.copy(alpha = 0.6f) else Color.Transparent)
+                            .padding(horizontal = 8.dp, vertical = 4.dp)
+                    ) {
+                        // Dirty indicator (blue dot)
+                        if (isDirty) {
+                            Box(
+                                modifier = Modifier
+                                    .size(8.dp)
+                                    .background(Color(0xFF2196F3), CircleShape)
+                                    .padding(end = 4.dp)
+                            )
+                            Spacer(modifier = Modifier.width(4.dp))
+                        }
+
+                        Text(
+                            text = file.name,
+                            color = MaterialTheme.colorScheme.onPrimary,
+                            modifier = Modifier.padding(end = 4.dp)
+                        )
+                        Icon(
+                            imageVector = Icons.Default.Close,
+                            contentDescription = "Close $file",
+                            tint = MaterialTheme.colorScheme.onPrimary,
+                            modifier = Modifier
+                                .size(16.dp)
+                                .clickable {
+                                    onFileClosed(file)
+                                }
+                                .pointerHoverIcon(PointerIcon(Cursor(Cursor.HAND_CURSOR)))
+                        )
+                    }
+                    Spacer(Modifier.height(3.dp))
                 }
-                Spacer(Modifier.height(3.dp))
             }
-        }
     }
 }
