@@ -13,6 +13,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.input.key.KeyEventType
+import androidx.compose.ui.input.key.isCtrlPressed
+import androidx.compose.ui.input.key.isMetaPressed
+import androidx.compose.ui.input.key.key
+import androidx.compose.ui.input.key.onPreviewKeyEvent
+import androidx.compose.ui.input.key.type
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.font.FontFamily
@@ -111,7 +118,20 @@ fun TextEditorScreen(
                 modifier = Modifier
                     .fillMaxSize()
                     .background(Color(0xFF181818))
-                    .padding(horizontal = 16.dp, vertical = 12.dp),
+                    .padding(horizontal = 16.dp, vertical = 12.dp)
+                    .onPreviewKeyEvent { event ->
+                        if (
+                            event.type == KeyEventType.KeyDown &&
+                            (event.isCtrlPressed || event.isMetaPressed) && // Meta = Command on macOS
+                            event.key == Key.S
+                        ) {
+                            save()
+                            true
+                        }  else {
+                            false
+                        }
+                    }
+                ,
                 textStyle = TextStyle(
                     fontSize = 14.sp,
                     fontFamily = FontFamily.Monospace,

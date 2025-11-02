@@ -46,8 +46,7 @@ fun EditorScreen(
                     onClick = onBack,
                     modifier = Modifier
                         .padding(4.dp)
-                        .size(20.dp)
-                    ,
+                        .size(20.dp),
                     ) {
                     Icon(
                         modifier = Modifier,
