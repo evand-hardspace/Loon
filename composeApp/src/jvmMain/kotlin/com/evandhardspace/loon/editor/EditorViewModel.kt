@@ -10,18 +10,18 @@ class EditorViewModel : ViewModel() {
     private val _state = MutableStateFlow(EditorState())
     val state = _state.asStateFlow()
 
-    fun onFileSelected(fileName: String) {
-        if(fileName in state.value.tabs) {
+    fun onFileSelected(filePath: String) {
+        if(filePath in state.value.tabs) {
             _state.update {
                 it.copy(
-                    selectedFile = fileName
+                    selectedFile = filePath
                 )
             }
         } else {
             _state.update {
                 it.copy(
-                    tabs = it.tabs + fileName,
-                    selectedFile = fileName,
+                    tabs = it.tabs + filePath,
+                    selectedFile = filePath,
                 )
             }
         }
