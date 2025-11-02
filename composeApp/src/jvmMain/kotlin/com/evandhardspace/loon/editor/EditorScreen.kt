@@ -69,7 +69,7 @@ fun EditorScreen(
                         tabViewModel.onTabClosed(it)
                         textEditorViewModel.removeHolder(it.path)
                     },
-                    selectedFile = textEditorViewModel.selected?.let { File(it) },
+                    selectedFile = state.treeSelectedFile, // Use treeSelectedFile instead
                 )
             }
         },

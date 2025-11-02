@@ -12,17 +12,28 @@ class TabViewModel : ViewModel() {
     val state = _state.asStateFlow()
 
     fun onFileSelected(file: File) {
-        if (file in state.value.tabs) {
-            _state.update {
-                it.copy(
-                    selectedFile = file
-                )
-            }
-        } else {
-            _state.update {
-                it.copy(
-                    tabs = it.tabs + file,
-                    selectedFile = file,
+        _state.update { currentState ->
+            // Always update treeSelectedFile for tree highlighting
+            val newTreeSelected = file
+
+            // Only update tabs and selectedFile if it's a file, not a directory
+            if (file.isFile) {
+                if (file in currentState.tabs) {
+                    currentState.copy(
+                        selectedFile = file,
+                        treeSelectedFile = newTreeSelected
+                    )
+                } else {
+                    currentState.copy(
+                        tabs = currentState.tabs + file,
+                        selectedFile = file,
+                        treeSelectedFile = newTreeSelected
+                    )
+                }
+            } else {
+                // For directories, only update tree selection, keep current tab
+                currentState.copy(
+                    treeSelectedFile = newTreeSelected
                 )
             }
         }
@@ -44,4 +55,5 @@ class TabViewModel : ViewModel() {
 data class EditorState(
     val tabs: List<File> = emptyList(),
     val selectedFile: File? = null,
+    val treeSelectedFile: File? = null, // Separate tracking for tree UI
 )

@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -20,8 +21,10 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material.icons.automirrored.filled.InsertDriveFile
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.FolderOpen
+import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
@@ -334,9 +337,17 @@ fun FileNode(
                 .padding(start = (level * 16).dp)
                 .fillMaxWidth()
                 .clickable {
-                    onFileSelect(file)
                     if (file.isDirectory) {
-                        expanded = !expanded
+                        // If already selected, toggle expansion
+                        if (isSelected) {
+                            expanded = !expanded
+                        } else {
+                            // First click just selects
+                            onFileSelect(file)
+                        }
+                    } else {
+                        // Files always get selected
+                        onFileSelect(file)
                     }
                 }
                 .onPointerEvent(PointerEventType.Enter) { isHovered = true }
@@ -350,6 +361,23 @@ fun FileNode(
                 )
                 .padding(vertical = 2.dp)
         ) {
+            // Chevron for directories
+            if (file.isDirectory) {
+                Icon(
+                    imageVector = if (expanded) Icons.Default.KeyboardArrowDown else Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                    contentDescription = null,
+                    modifier = Modifier
+                        .size(20.dp)
+                        .padding(end = 2.dp),
+                    tint = when {
+                        isSelected -> MaterialTheme.colorScheme.onPrimaryContainer
+                        else -> MaterialTheme.colorScheme.onBackground
+                    },
+                )
+            } else {
+                Spacer(modifier = Modifier.width(16.dp))
+            }
+
             val icon = when {
                 file.isDirectory && expanded -> Icons.Default.FolderOpen
                 file.isDirectory -> Icons.Default.Folder
