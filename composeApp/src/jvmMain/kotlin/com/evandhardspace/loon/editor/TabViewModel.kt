@@ -7,7 +7,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import java.io.File
 
-class EditorViewModel : ViewModel() {
+class TabViewModel : ViewModel() {
     private val _state = MutableStateFlow(EditorState())
     val state = _state.asStateFlow()
 
