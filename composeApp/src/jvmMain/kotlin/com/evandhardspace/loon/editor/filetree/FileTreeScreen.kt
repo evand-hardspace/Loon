@@ -54,11 +54,12 @@ fun FileTree(
     root: File,
     modifier: Modifier = Modifier,
     onDeleteFile: (File) -> Unit,
-    selectedFile : File?,
-    onFileSelect: (File?) -> Unit,
+    selectedFile: File?,
+    onFileSelect: (File) -> Unit,
 ) {
     var refreshTrigger by remember { mutableStateOf(0) }
     var showNameDialog by remember { mutableStateOf(false) }
+    var showDeleteDialog by remember { mutableStateOf(false) }
     var newFileName by remember { mutableStateOf("") }
 
     // Watch for external changes
@@ -161,25 +162,91 @@ fun FileTree(
         }
     }
 
+    // Delete confirmation dialog
+    if (showDeleteDialog && selectedFile != null) {
+        Dialog(onDismissRequest = {
+            showDeleteDialog = false
+        }) {
+            Surface(
+                shape = RoundedCornerShape(8.dp),
+                color = MaterialTheme.colorScheme.surface,
+                modifier = Modifier.padding(16.dp)
+            ) {
+                Column(
+                    modifier = Modifier.padding(16.dp),
+                ) {
+                    Text(
+                        text = "Delete ${if (selectedFile.isDirectory) "Folder" else "File"}",
+                        style = MaterialTheme.typography.titleMedium,
+                        color = MaterialTheme.colorScheme.onBackground,
+                        modifier = Modifier.padding(bottom = 8.dp)
+                    )
+
+                    Text(
+                        text = "Are you sure you want to delete \"${selectedFile.name}\"?${if (selectedFile.isDirectory) " This will delete all contents." else ""}",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onBackground,
+                        modifier = Modifier.padding(bottom = 16.dp)
+                    )
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.End,
+                    ) {
+                        TextButton(onClick = {
+                            showDeleteDialog = false
+                        }) {
+                            Text("Cancel")
+                        }
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Button(
+                            onClick = {
+                                deleteFileOrDirectory(root,selectedFile)
+                                onDeleteFile(selectedFile)
+                                refreshTrigger++
+                                showDeleteDialog = false
+                            },
+                            colors = androidx.compose.material3.ButtonDefaults.buttonColors(
+                                containerColor = MaterialTheme.colorScheme.error
+                            )
+                        ) {
+                            Text("Delete")
+                        }
+                    }
+                }
+            }
+        }
+    }
+
     LazyColumn(
         modifier = modifier
             .onKeyEvent { event ->
-                if (event.type == KeyEventType.KeyDown &&
-                    event.isMetaPressed &&
-                    event.key == Key.N &&
-                    selectedFile != null
-                ) {
-                    newFileName = "untitled.txt"
-                    showNameDialog = true
-                    true
-                } else {
-                    false
+                when {
+                    event.type == KeyEventType.KeyDown &&
+                            event.isMetaPressed &&
+                            event.key == Key.Backspace &&
+                            selectedFile != null -> {
+                        showDeleteDialog = true
+                        true
+                    }
+                    // Cmd+N for new file
+                    event.type == KeyEventType.KeyDown &&
+                            event.isMetaPressed &&
+                            event.key == Key.N &&
+                            selectedFile != null -> {
+                        newFileName = "untitled.txt"
+                        showNameDialog = true
+                        true
+                    }
+
+                    else -> false
                 }
             }
     ) {
         item {
             FileNode(
                 file = root,
+                root = root,
                 refreshTrigger = refreshTrigger,
                 selectedFile = selectedFile,
                 onFileSelect = onFileSelect,
@@ -199,6 +266,7 @@ fun FileTree(
 @OptIn(ExperimentalFoundationApi::class, ExperimentalComposeUiApi::class)
 @Composable
 fun FileNode(
+    root: File,
     file: File,
     refreshTrigger: Int,
     selectedFile: File?,
@@ -223,7 +291,7 @@ fun FileNode(
                     onCreateFile()
                 },
                 ContextMenuItem("Delete") {
-                    deleteFileOrDirectory(file)
+                    deleteFileOrDirectory(root, file)
                     onDeleteFile(file)
                 },
             )
@@ -279,6 +347,7 @@ fun FileNode(
             for (child in children) {
                 FileNode(
                     file = child,
+                    root = root,
                     refreshTrigger = refreshTrigger,
                     selectedFile = selectedFile,
                     onFileSelect = onFileSelect,
@@ -308,7 +377,8 @@ fun createFileRelativeTo(selected: File, newFileName: String): File? {
     return newFile
 }
 
-fun deleteFileOrDirectory(target: File): Boolean {
+fun deleteFileOrDirectory(root: File, target: File): Boolean {
+    if (target == root) return false // TODO
     return if (target.exists()) {
         if (target.isDirectory) {
             target.deleteRecursively()

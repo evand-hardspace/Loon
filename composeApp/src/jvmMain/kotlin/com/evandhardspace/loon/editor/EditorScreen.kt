@@ -58,7 +58,7 @@ fun EditorScreen(
                 FileTree(
                     root = File(selectedPath),
                     onFileSelect = {
-                        if(it != null && it.isFile) {
+                        if(it.isFile) {
                             editorViewModel.onFileSelected(it)
                             textEditorViewModel.addHolder(it.path)
                         }
