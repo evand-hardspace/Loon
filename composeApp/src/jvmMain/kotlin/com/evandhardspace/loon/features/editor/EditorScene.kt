@@ -1,4 +1,4 @@
-package com.evandhardspace.loon.scenes.editor
+package com.evandhardspace.loon.features.editor
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column
@@ -23,11 +23,11 @@ import androidx.compose.ui.input.key.type
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.evandhardspace.loon.scenes.editor.filetree.FileTree
-import com.evandhardspace.loon.scenes.editor.filetree.ImageViewScreen
-import com.evandhardspace.loon.scenes.editor.tab.TabPanel
-import com.evandhardspace.loon.scenes.editor.texteditor.TextEditorGlobalViewModel
-import com.evandhardspace.loon.scenes.editor.texteditor.TextEditorScreen
+import com.evandhardspace.loon.features.editor.filetree.FileTree
+import com.evandhardspace.loon.features.editor.filetree.ImageViewScreen
+import com.evandhardspace.loon.features.editor.tab.TabPanel
+import com.evandhardspace.loon.features.editor.texteditor.TextEditorGlobalViewModel
+import com.evandhardspace.loon.features.editor.texteditor.TextEditorScreen
 import com.evandhardspace.loon.coreutils.ui.SplitPane
 import java.io.File
 

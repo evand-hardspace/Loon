@@ -1,4 +1,4 @@
-package com.evandhardspace.loon.scenes.filechooser
+package com.evandhardspace.loon.features.filechooser
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box

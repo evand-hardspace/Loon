@@ -7,8 +7,8 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
-import com.evandhardspace.loon.scenes.filechooser.FileChooserScene
-import com.evandhardspace.loon.scenes.editor.EditorScene
+import com.evandhardspace.loon.features.filechooser.FileChooserScene
+import com.evandhardspace.loon.features.editor.EditorScene
 import com.evandhardspace.loon.coreutils.ui.LoonTheme
 
 @Composable

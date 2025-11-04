@@ -1,4 +1,4 @@
-package com.evandhardspace.loon.scenes.filechooser
+package com.evandhardspace.loon.features.filechooser
 
 internal data class FileChooserState(
     val error: String? = null,

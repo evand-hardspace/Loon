@@ -1,4 +1,4 @@
-package com.evandhardspace.loon.scenes.editor.filetree
+package com.evandhardspace.loon.features.editor.filetree
 
 import androidx.compose.foundation.ContextMenuArea
 import androidx.compose.foundation.ContextMenuItem
