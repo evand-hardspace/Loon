@@ -6,6 +6,7 @@ import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -14,6 +15,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material3.Icon
@@ -35,8 +37,10 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.key
@@ -48,6 +52,7 @@ import androidx.compose.ui.input.pointer.PointerEventType
 import androidx.compose.ui.input.pointer.onPointerEvent
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
+import com.evandhardspace.loon.DirtyFilesState
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.File
@@ -71,6 +76,7 @@ fun FileTree(
     var showDeleteDialog by remember { mutableStateOf(false) }
     var createType by remember { mutableStateOf(CreateType.FILE) }
     var newFileName by remember { mutableStateOf("") }
+    val dirtyFilesState = remember { DirtyFilesState() }
 
     // Watch for external changes
     LaunchedEffect(root) {
@@ -217,7 +223,7 @@ fun FileTree(
                         Spacer(modifier = Modifier.width(8.dp))
                         Button(
                             onClick = {
-                                deleteFileOrDirectory(root,selectedFile)
+                                deleteFileOrDirectory(root, selectedFile)
                                 onDeleteFile(selectedFile)
                                 refreshTrigger++
                                 showDeleteDialog = false
@@ -248,7 +254,7 @@ fun FileTree(
                     // Cmd+N for new file
                     event.type == KeyEventType.KeyDown &&
                             event.isMetaPressed &&
-                            event.key == Key.N  ->{
+                            event.key == Key.N -> {
                         createType = CreateType.FILE
                         newFileName = "untitled.txt"
                         showNameDialog = true
@@ -258,7 +264,7 @@ fun FileTree(
                     event.type == KeyEventType.KeyDown &&
                             event.isMetaPressed &&
                             event.isShiftPressed &&
-                            event.key == Key.N  ->{
+                            event.key == Key.N -> {
                         createType = CreateType.FOLDER
                         newFileName = "untitled"
                         showNameDialog = true
@@ -273,6 +279,7 @@ fun FileTree(
             FileNode(
                 file = root,
                 root = root,
+                isDirty = { file -> dirtyFilesState.state.find { it.file.absolutePath == file }?.isDirty ?: false },
                 refreshTrigger = refreshTrigger,
                 selectedFile = selectedFile,
                 onFileSelect = onFileSelect,
@@ -300,6 +307,7 @@ fun FileTree(
 fun FileNode(
     root: File,
     file: File,
+    isDirty: (path: String) -> Boolean,
     refreshTrigger: Int,
     selectedFile: File?,
     onFileSelect: (File) -> Unit,
@@ -360,7 +368,8 @@ fun FileNode(
                         else -> MaterialTheme.colorScheme.background
                     }
                 )
-                .padding(vertical = 2.dp)
+                .padding(vertical = 2.dp),
+            verticalAlignment = Alignment.CenterVertically,
         ) {
             // Chevron for directories
             if (file.isDirectory) {
@@ -400,6 +409,20 @@ fun FileNode(
                     else -> MaterialTheme.colorScheme.onBackground
                 },
             )
+            if (isDirty(file.absolutePath)) {
+                Spacer(Modifier.width(4.dp))
+                Box(
+                    modifier = Modifier
+                        .clip(CircleShape)
+                        .background(
+                            color = when {
+                                isSelected -> MaterialTheme.colorScheme.onPrimaryContainer
+                                else -> MaterialTheme.colorScheme.onBackground
+                            }
+                        )
+                        .size(6.dp)
+                )
+            }
         }
     }
 
@@ -409,6 +432,7 @@ fun FileNode(
                 FileNode(
                     file = child,
                     root = root,
+                    isDirty = isDirty,
                     refreshTrigger = refreshTrigger,
                     selectedFile = selectedFile,
                     onFileSelect = onFileSelect,

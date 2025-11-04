@@ -1,4 +1,4 @@
-package com.evandhardspace.loon.features.scene.editor
+package com.evandhardspace.loon.features.tab
 import androidx.compose.runtime.Immutable
 import androidx.lifecycle.ViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -42,23 +42,10 @@ class TabViewModel : ViewModel() {
         if (file !in state.value.tabs) return
         _state.update {
             val newTabs = it.tabs - file
-            val newDirtyFiles = it.dirtyFiles - file.absolutePath
             it.copy(
                 tabs = newTabs,
                 selectedFile = if (newTabs.contains(it.selectedFile)) it.selectedFile else newTabs.lastOrNull(),
-                dirtyFiles = newDirtyFiles,
             )
-        }
-    }
-
-    fun setFileDirty(filePath: String, isDirty: Boolean) {
-        _state.update {
-            val newDirtyFiles = if (isDirty) {
-                it.dirtyFiles + filePath
-            } else {
-                it.dirtyFiles - filePath
-            }
-            it.copy(dirtyFiles = newDirtyFiles)
         }
     }
 }
@@ -68,5 +55,4 @@ data class EditorState(
     val tabs: List<File> = emptyList(),
     val selectedFile: File? = null,
     val treeSelectedFile: File? = null, // Separate tracking for tree UI
-    val dirtyFiles: Set<String> = emptySet(), // Track dirty file paths
 )

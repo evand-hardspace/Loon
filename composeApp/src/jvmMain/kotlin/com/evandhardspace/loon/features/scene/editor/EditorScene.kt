@@ -13,6 +13,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.input.key.KeyEventType
@@ -23,12 +24,14 @@ import androidx.compose.ui.input.key.type
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.evandhardspace.loon.DirtyFilesState
 import com.evandhardspace.loon.features.filetree.FileTree
 import com.evandhardspace.loon.features.filetree.ImageViewScreen
 import com.evandhardspace.loon.features.tab.TabPanel
 import com.evandhardspace.loon.features.texteditor.TextEditorGlobalViewModel
 import com.evandhardspace.loon.features.texteditor.TextEditorScreen
 import com.evandhardspace.loon.coreutils.ui.SplitPane
+import com.evandhardspace.loon.features.tab.TabViewModel
 import java.io.File
 
 @Composable
@@ -44,11 +47,6 @@ fun EditorScene(
     val selectedFile = state.selectedFile
     LaunchedEffect(selectedFile) {
         textEditorViewModel.changeSelected(selectedFile?.path)
-    }
-    LaunchedEffect(textEditorViewModel.isDirty, selectedFile) {
-        selectedFile?.let { file ->
-            tabViewModel.setFileDirty(file.absolutePath, textEditorViewModel.isDirty)
-        }
     }
 
     SplitPane(
@@ -122,21 +120,7 @@ fun EditorScene(
                     )
                 } else {
                     TextEditorScreen(
-                        selectedPath = textEditorViewModel.selected,
-                        isDirty = textEditorViewModel.isDirty,
-                        save = {
-                            textEditorViewModel.save()
-                            state.selectedFile?.let { file ->
-                                tabViewModel.setFileDirty(file.absolutePath, false)
-                            }
-                        },
-                        textState = textEditorViewModel.textState,
-                        getCharCount = textEditorViewModel::getCharCount,
-                        getWordCount = textEditorViewModel::getWordCount,
-                        getLineCount = textEditorViewModel::getLineCount,
-                        updateText = {
-                            textEditorViewModel.updateText(it)
-                        },
+                        viewModel = textEditorViewModel,
                         modifier = Modifier.weight(1f)
                     )
                 }

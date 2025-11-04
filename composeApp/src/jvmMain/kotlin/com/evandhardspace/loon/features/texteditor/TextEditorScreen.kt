@@ -34,6 +34,24 @@ import java.io.File
 
 @Composable
 fun TextEditorScreen(
+    viewModel: TextEditorGlobalViewModel,
+    modifier: Modifier = Modifier,
+) {
+    TextEditorContent(
+        selectedPath = viewModel.selected,
+        isDirty = viewModel.isDirty,
+        save = viewModel::save,
+        textState = viewModel.textState,
+        getCharCount = viewModel::getCharCount,
+        getWordCount = viewModel::getWordCount,
+        getLineCount = viewModel::getLineCount,
+        updateText = viewModel::updateText,
+        modifier = modifier,
+    )
+}
+
+@Composable
+fun TextEditorContent(
     selectedPath: String?,
     isDirty: Boolean,
     modifier: Modifier = Modifier,

@@ -7,6 +7,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshots.SnapshotStateMap
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.lifecycle.ViewModel
+import com.evandhardspace.loon.DirtyFilesState
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.cancel
@@ -15,31 +16,42 @@ import kotlinx.coroutines.launch
 import java.io.File
 import kotlin.collections.get
 
-class TextEditorGlobalViewModel() : ViewModel() {
-    val holders: SnapshotStateMap<String, TextEditorHolder> = mutableStateMapOf<String, TextEditorHolder>()
+class TextEditorGlobalViewModel(
+    private val dirtyFileState: DirtyFilesState = DirtyFilesState(),
+) : ViewModel() {
+    val holders: SnapshotStateMap<String, TextEditorHolder> = mutableStateMapOf()
 
     val textState: TextFieldValue
         get() = holders[selected]?.textState ?: TextFieldValue()
     val isDirty: Boolean
-        get() = holders[selected]?.isDirty ?: false
-//    val dirtyFiles: Flow<Map<String, Boolean>> =  snapshotFlow { holders }
-//        .map { it.map { (key, value) -> key to value.isDirty }.toMap() }
-////        holders.map { (key, value) -> key to value.isDirty}.toMap()
+        get() = selected?.let { s ->
+            dirtyFileState.state
+                .find { it.file.absolutePath == s }
+                ?.isDirty
+                ?: false
+        } ?: false
 
     var selected: String? by mutableStateOf(null)
         private set
 
     fun changeSelected(newSelected: String?) {
-        println("changed to :$newSelected")
         selected = newSelected
     }
 
     fun addHolder(filePath: String) {
         if (holders[filePath] != null) return
-        holders[filePath] = TextEditorHolder(filePath)
+        dirtyFileState.add(File(filePath))
+        holders[filePath] = TextEditorHolder(
+            selectedPath = filePath,
+            updateIsDirty = { isDirty ->
+                dirtyFileState.updateIsDirty(filePath, isDirty)
+            },
+            isDirty = { dirtyFileState.state.find { it.file.absolutePath == filePath }?.isDirty ?: false }
+        )
     }
 
     fun removeHolder(filePath: String) {
+        dirtyFileState.remove(filePath)
         val holder = holders.remove(filePath)
         holder?.onClear()
     }
@@ -65,6 +77,8 @@ class TextEditorGlobalViewModel() : ViewModel() {
 
 class TextEditorHolder(
     private val selectedPath: String,
+    private val updateIsDirty: (Boolean) -> Unit,
+    private val isDirty: () -> Boolean,
     val coroutineScope: CoroutineScope = CoroutineScope(Dispatchers.IO),
 ) {
 
@@ -72,7 +86,7 @@ class TextEditorHolder(
         coroutineScope.launch {
             while (true) {
                 delay(1_000)
-                if (isDirty.not()) {
+                if (isDirty().not()) {
                     textState = textState.copy(text = File(selectedPath).readText())
                 }
             }
@@ -88,21 +102,18 @@ class TextEditorHolder(
 
     private var initialSnapshot: String = textState.text
 
-    var isDirty: Boolean by mutableStateOf(false)
-
     fun updateText(newText: TextFieldValue) {
         if (newText.text != textState.text) {
-            isDirty = true
+            updateIsDirty(true)
         }
-        if(newText.text == initialSnapshot) {
-            isDirty = false
+        if (newText.text == initialSnapshot) {
+            updateIsDirty(false)
         }
         textState = newText
     }
 
     fun clearText() {
-        isDirty = true
-        textState = TextFieldValue("")
+        updateText(TextFieldValue(""))
     }
 
     fun getCharCount(): Int = textState.text.length
@@ -116,9 +127,10 @@ class TextEditorHolder(
     fun getLineCount(): Int = textState.text.lines().size
 
     fun save() {
+        initialSnapshot = textState.text
         try {
             File(selectedPath).writeText(textState.text)
-            isDirty = false
+            updateIsDirty(false)
         } catch (t: Throwable) {
             println("File saving went wrong: $t")
         }
