@@ -1,4 +1,4 @@
-package com.evandhardspace.loon.editor.tab
+package com.evandhardspace.loon.scenes.editor.tab
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -25,7 +25,7 @@ import androidx.compose.ui.input.pointer.PointerIcon
 import androidx.compose.ui.input.pointer.onPointerEvent
 import androidx.compose.ui.input.pointer.pointerHoverIcon
 import androidx.compose.ui.unit.dp
-import com.evandhardspace.loon.editor.EditorState
+import com.evandhardspace.loon.scenes.editor.EditorState
 import org.jetbrains.skiko.Cursor
 import java.io.File
 

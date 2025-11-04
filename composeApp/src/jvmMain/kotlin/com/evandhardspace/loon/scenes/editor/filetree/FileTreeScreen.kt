@@ -1,4 +1,4 @@
-package com.evandhardspace.loon.editor.filetree
+package com.evandhardspace.loon.scenes.editor.filetree
 
 import androidx.compose.foundation.ContextMenuArea
 import androidx.compose.foundation.ContextMenuItem
@@ -26,6 +26,7 @@ import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.FolderOpen
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.runtime.Composable
@@ -221,7 +222,7 @@ fun FileTree(
                                 refreshTrigger++
                                 showDeleteDialog = false
                             },
-                            colors = androidx.compose.material3.ButtonDefaults.buttonColors(
+                            colors = ButtonDefaults.buttonColors(
                                 containerColor = MaterialTheme.colorScheme.error
                             )
                         ) {

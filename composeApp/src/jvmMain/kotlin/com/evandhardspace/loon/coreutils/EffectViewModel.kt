@@ -1,4 +1,4 @@
-package com.evandhardspace.loon.utils
+package com.evandhardspace.loon.coreutils
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect

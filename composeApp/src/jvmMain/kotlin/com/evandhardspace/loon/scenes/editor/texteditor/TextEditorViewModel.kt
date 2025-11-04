@@ -1,22 +1,19 @@
-package com.evandhardspace.loon.editor.texteditor
+package com.evandhardspace.loon.scenes.editor.texteditor
 
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
-import androidx.compose.runtime.snapshotFlow
 import androidx.compose.runtime.snapshots.SnapshotStateMap
 import androidx.compose.ui.text.input.TextFieldValue
-import androidx.lifecycle.LifecycleCoroutineScope
 import androidx.lifecycle.ViewModel
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import java.io.File
+import kotlin.collections.get
 
 class TextEditorGlobalViewModel() : ViewModel() {
     val holders: SnapshotStateMap<String, TextEditorHolder> = mutableStateMapOf<String, TextEditorHolder>()

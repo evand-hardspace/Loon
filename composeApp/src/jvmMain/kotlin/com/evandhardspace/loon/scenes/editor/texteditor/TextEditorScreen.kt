@@ -1,4 +1,4 @@
-package com.evandhardspace.loon.editor.texteditor
+package com.evandhardspace.loon.scenes.editor.texteditor
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -8,6 +8,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Save
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -51,7 +52,7 @@ fun TextEditorScreen(
             ) {
                 Text(
                     text = "File is not selected",
-                    color = androidx.compose.material3.MaterialTheme.colorScheme.onBackground,
+                    color = MaterialTheme.colorScheme.onBackground,
                 )
             }
             return
@@ -66,7 +67,7 @@ fun TextEditorScreen(
             ) {
                 Text(
                     text = "Selected item is not a text or image file.",
-                    color = androidx.compose.material3.MaterialTheme.colorScheme.onPrimary,
+                    color = MaterialTheme.colorScheme.onPrimary,
                 )
             }
             return

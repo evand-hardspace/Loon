@@ -1,4 +1,4 @@
-package com.evandhardspace.loon.ui
+package com.evandhardspace.loon.coreutils.ui
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectDragGestures

@@ -1,4 +1,4 @@
-package com.evandhardspace.loon.editor
+package com.evandhardspace.loon.scenes.editor
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column
@@ -23,16 +23,16 @@ import androidx.compose.ui.input.key.type
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.evandhardspace.loon.editor.filetree.FileTree
-import com.evandhardspace.loon.editor.filetree.ImageViewScreen
-import com.evandhardspace.loon.editor.tab.TabPanel
-import com.evandhardspace.loon.editor.texteditor.TextEditorGlobalViewModel
-import com.evandhardspace.loon.editor.texteditor.TextEditorScreen
-import com.evandhardspace.loon.ui.SplitPane
+import com.evandhardspace.loon.scenes.editor.filetree.FileTree
+import com.evandhardspace.loon.scenes.editor.filetree.ImageViewScreen
+import com.evandhardspace.loon.scenes.editor.tab.TabPanel
+import com.evandhardspace.loon.scenes.editor.texteditor.TextEditorGlobalViewModel
+import com.evandhardspace.loon.scenes.editor.texteditor.TextEditorScreen
+import com.evandhardspace.loon.coreutils.ui.SplitPane
 import java.io.File
 
 @Composable
-fun EditorScreen(
+fun EditorScene(
     selectedPath: String,
     onBack: () -> Unit,
     modifier: Modifier = Modifier,

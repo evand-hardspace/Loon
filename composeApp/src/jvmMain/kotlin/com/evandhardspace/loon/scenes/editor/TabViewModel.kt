@@ -1,4 +1,4 @@
-package com.evandhardspace.loon.editor
+package com.evandhardspace.loon.scenes.editor
 import androidx.compose.runtime.Immutable
 import androidx.lifecycle.ViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
