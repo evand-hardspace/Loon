@@ -52,7 +52,7 @@ import androidx.compose.ui.input.pointer.PointerEventType
 import androidx.compose.ui.input.pointer.onPointerEvent
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
-import com.evandhardspace.loon.DirtyFilesState
+import com.evandhardspace.loon.presentation.state.DirtyFilesState
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.File

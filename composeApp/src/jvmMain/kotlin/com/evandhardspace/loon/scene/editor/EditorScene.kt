@@ -1,4 +1,4 @@
-package com.evandhardspace.loon.features.scene.editor
+package com.evandhardspace.loon.scene.editor
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column
@@ -13,7 +13,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.input.key.KeyEventType
@@ -24,7 +23,6 @@ import androidx.compose.ui.input.key.type
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.evandhardspace.loon.DirtyFilesState
 import com.evandhardspace.loon.features.filetree.FileTree
 import com.evandhardspace.loon.features.filetree.ImageViewScreen
 import com.evandhardspace.loon.features.tab.TabPanel

@@ -25,7 +25,7 @@ import androidx.compose.ui.input.pointer.PointerIcon
 import androidx.compose.ui.input.pointer.onPointerEvent
 import androidx.compose.ui.input.pointer.pointerHoverIcon
 import androidx.compose.ui.unit.dp
-import com.evandhardspace.loon.DirtyFilesState
+import com.evandhardspace.loon.presentation.state.DirtyFilesState
 import org.jetbrains.skiko.Cursor
 import java.io.File
 

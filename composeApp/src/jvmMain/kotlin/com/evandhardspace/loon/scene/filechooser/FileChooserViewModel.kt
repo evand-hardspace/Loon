@@ -1,4 +1,4 @@
-package com.evandhardspace.loon.features.scene.filechooser
+package com.evandhardspace.loon.scene.filechooser
 
 import com.evandhardspace.loon.coreutils.EffectViewModel
 import kotlinx.coroutines.flow.MutableStateFlow

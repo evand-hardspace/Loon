@@ -1,4 +1,4 @@
-package com.evandhardspace.loon
+package com.evandhardspace.loon.presentation.state
 
 import androidx.compose.runtime.mutableStateSetOf
 import androidx.compose.runtime.snapshotFlow
