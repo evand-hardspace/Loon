@@ -1,4 +1,4 @@
-package com.evandhardspace.loon.features.editor
+package com.evandhardspace.loon.features.scene.editor
 import androidx.compose.runtime.Immutable
 import androidx.lifecycle.ViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -20,19 +20,19 @@ class TabViewModel : ViewModel() {
                 if (file in currentState.tabs) {
                     currentState.copy(
                         selectedFile = file,
-                        treeSelectedFile = newTreeSelected
+                        treeSelectedFile = newTreeSelected,
                     )
                 } else {
                     currentState.copy(
                         tabs = currentState.tabs + file,
                         selectedFile = file,
-                        treeSelectedFile = newTreeSelected
+                        treeSelectedFile = newTreeSelected,
                     )
                 }
             } else {
                 // For directories, only update tree selection, keep current tab
                 currentState.copy(
-                    treeSelectedFile = newTreeSelected
+                    treeSelectedFile = newTreeSelected,
                 )
             }
         }
@@ -46,7 +46,7 @@ class TabViewModel : ViewModel() {
             it.copy(
                 tabs = newTabs,
                 selectedFile = if (newTabs.contains(it.selectedFile)) it.selectedFile else newTabs.lastOrNull(),
-                dirtyFiles = newDirtyFiles
+                dirtyFiles = newDirtyFiles,
             )
         }
     }

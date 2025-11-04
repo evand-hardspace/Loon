@@ -1,4 +1,4 @@
-package com.evandhardspace.loon.features.editor.texteditor
+package com.evandhardspace.loon.features.texteditor
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
