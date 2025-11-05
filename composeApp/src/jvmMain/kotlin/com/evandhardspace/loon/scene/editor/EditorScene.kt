@@ -11,8 +11,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.input.key.KeyEventType
@@ -30,6 +30,8 @@ import com.evandhardspace.loon.features.texteditor.TextEditorGlobalViewModel
 import com.evandhardspace.loon.features.texteditor.TextEditorScreen
 import com.evandhardspace.loon.coreutils.ui.SplitPane
 import com.evandhardspace.loon.features.tab.TabViewModel
+import com.evandhardspace.loon.presentation.state.SelectedFileState
+import com.evandhardspace.loon.presentation.state.getState
 import java.io.File
 
 @Composable
@@ -37,15 +39,11 @@ fun EditorScene(
     selectedPath: String,
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
-    tabViewModel: TabViewModel = viewModel { TabViewModel() },
+    tabViewModel: TabViewModel = viewModel { TabViewModel() }, // TODO get rid on this level
     textEditorViewModel: TextEditorGlobalViewModel = viewModel { TextEditorGlobalViewModel() },
 ) {
     val state by tabViewModel.state.collectAsStateWithLifecycle()
-
-    val selectedFile = state.selectedFile
-    LaunchedEffect(selectedFile) {
-        textEditorViewModel.changeSelected(selectedFile?.path)
-    }
+    val selectedFileState: SelectedFileState = remember { getState() }
 
     SplitPane(
         modifier = modifier
@@ -55,7 +53,7 @@ fun EditorScene(
                     event.type == KeyEventType.KeyDown &&
                             event.isMetaPressed &&
                             event.key == Key.W -> {
-                        state.selectedFile?.let {
+                        selectedFileState.selectedFile?.let {
                             tabViewModel.onTabClosed(it)
                             textEditorViewModel.removeHolder(it.path)
                         }
@@ -83,16 +81,18 @@ fun EditorScene(
                 FileTree(
                     root = File(selectedPath),
                     onFileSelect = {
-                        tabViewModel.onFileSelected(it)
+                        selectedFileState.selectFile(it)
+                        if (it.isDirectory.not()) {
+                            tabViewModel.addTab(it)
+                        }
                         if (it.isFile) {
-                            textEditorViewModel.addHolder(it.path)
+                            textEditorViewModel.addHolder(it)
                         }
                     },
                     onDeleteFile = {
                         tabViewModel.onTabClosed(it)
                         textEditorViewModel.removeHolder(it.path)
                     },
-                    selectedFile = state.treeSelectedFile, // Use treeSelectedFile instead
                 )
             }
         },
@@ -100,21 +100,21 @@ fun EditorScene(
             Column {
                 TabPanel(
                     state = state,
-                    onFileClosed = { file ->
+                    onTabClosed = { file ->
                         tabViewModel.onTabClosed(file)
                         textEditorViewModel.removeHolder(file.path)
                     },
-                    onFileSelected = { file ->
-                        tabViewModel.onFileSelected(file)
-                        if (file.extension.lowercase() != "png" && file.extension.lowercase() != "jpg") {
-                            textEditorViewModel.changeSelected(file.path)
-                        }
+                    onTabClick = { file ->
+                        tabViewModel.addTab(file)
+                        selectedFileState.selectFile(file)
                     },
                 )
-                if (state.selectedFile?.extension?.lowercase()?.let { it == "png" || it == "jpg" } == true) {
+                if (selectedFileState.selectedFile?.extension?.lowercase()
+                        ?.let { it == "png" || it == "jpg" } == true
+                ) {
                     ImageViewScreen(
                         modifier = Modifier.fillMaxSize(),
-                        imageFile = state.selectedFile,
+                        imageFile = selectedFileState.selectedFile,
                     )
                 } else {
                     TextEditorScreen(

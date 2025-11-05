@@ -53,6 +53,8 @@ import androidx.compose.ui.input.pointer.onPointerEvent
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import com.evandhardspace.loon.presentation.state.DirtyFilesState
+import com.evandhardspace.loon.presentation.state.SelectedFileState
+import com.evandhardspace.loon.presentation.state.getState
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.File
@@ -68,7 +70,6 @@ fun FileTree(
     root: File,
     modifier: Modifier = Modifier,
     onDeleteFile: (File) -> Unit,
-    selectedFile: File?,
     onFileSelect: (File) -> Unit,
 ) {
     var refreshTrigger by remember { mutableStateOf(0) }
@@ -76,7 +77,9 @@ fun FileTree(
     var showDeleteDialog by remember { mutableStateOf(false) }
     var createType by remember { mutableStateOf(CreateType.FILE) }
     var newFileName by remember { mutableStateOf("") }
-    val dirtyFilesState = remember { DirtyFilesState() }
+
+    val dirtyFilesState: DirtyFilesState = remember { getState() }
+    val selectedFileState: SelectedFileState = remember { getState() }
 
     // Watch for external changes
     LaunchedEffect(root) {
@@ -99,8 +102,9 @@ fun FileTree(
     }
 
     // Check if file exists
-    val targetDir = selectedFile?.takeIf { it.isDirectory }
-        ?: selectedFile?.parentFile
+    val selectedFile = selectedFileState.selectedFileOrDirectory
+    val targetDir = selectedFileState.selectedFileOrDirectory?.takeIf { it.isDirectory }
+        ?: selectedFileState.selectedFileOrDirectory?.parentFile
         ?: root
     val fileExists = File(targetDir, newFileName).exists()
     val fileNameIsBlank = newFileName.isBlank()
@@ -279,7 +283,7 @@ fun FileTree(
             FileNode(
                 file = root,
                 root = root,
-                isDirty = { file -> dirtyFilesState.state.find { it.file.absolutePath == file }?.isDirty ?: false },
+                isDirty = { file -> dirtyFilesState.dirtyStates.find { it.file.absolutePath == file }?.isDirty ?: false },
                 refreshTrigger = refreshTrigger,
                 selectedFile = selectedFile,
                 onFileSelect = onFileSelect,

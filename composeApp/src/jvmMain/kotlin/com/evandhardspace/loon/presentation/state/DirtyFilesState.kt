@@ -1,15 +1,14 @@
 package com.evandhardspace.loon.presentation.state
 
 import androidx.compose.runtime.mutableStateSetOf
-import androidx.compose.runtime.snapshotFlow
 import androidx.compose.runtime.snapshots.Snapshot.Companion.withMutableSnapshot
 import androidx.compose.runtime.snapshots.SnapshotStateSet
-import kotlinx.coroutines.flow.Flow
 import java.io.File
 
-interface DirtyFilesState {
-    val state: Set<DirtyState>
-    val stateAsFlow: Flow<Set<DirtyState>>
+interface State
+
+interface DirtyFilesState: State {
+    val dirtyStates: Set<DirtyState>
 
     fun updateIsDirty(
         path: String,
@@ -24,15 +23,10 @@ interface DirtyFilesState {
     fun remove(path: String)
 }
 
-fun DirtyFilesState(): DirtyFilesState = DefaultDirtyFilesState
+internal class DefaultDirtyFilesState : DirtyFilesState {
 
-internal object DefaultDirtyFilesState : DirtyFilesState {
-
-    private val _state: SnapshotStateSet<DirtyState> = mutableStateSetOf()
-    override val state: Set<DirtyState> get() = _state
-
-    // Flow for observing changes
-    override val stateAsFlow: Flow<Set<DirtyState>> = snapshotFlow { _state.toSet() }
+    private val _dirtyStates: SnapshotStateSet<DirtyState> = mutableStateSetOf()
+    override val dirtyStates: Set<DirtyState> get() = _dirtyStates
 
     override fun updateIsDirty(
         path: String,
@@ -45,9 +39,9 @@ internal object DefaultDirtyFilesState : DirtyFilesState {
     ) {
         withMutableSnapshot {
             val path = file.absolutePath
-            val existing = _state.find { it.file.absolutePath == path }
-            if (existing != null) _state.remove(existing)
-            _state.add(
+            val existing = _dirtyStates.find { it.file.absolutePath == path }
+            if (existing != null) _dirtyStates.remove(existing)
+            _dirtyStates.add(
                 DirtyState(
                     file = file,
                     isDirty = isDirty,
@@ -58,7 +52,7 @@ internal object DefaultDirtyFilesState : DirtyFilesState {
 
     override fun remove(path: String) {
         withMutableSnapshot {
-            _state.find { it.file.absolutePath == path }?.let(_state::remove)
+            _dirtyStates.find { it.file.absolutePath == path }?.let(_dirtyStates::remove)
         }
     }
 
@@ -67,9 +61,9 @@ internal object DefaultDirtyFilesState : DirtyFilesState {
         transform: (DirtyState) -> DirtyState,
     ) {
         withMutableSnapshot {
-            _state.find { it.file.absolutePath == path }?.let { old ->
-                _state.remove(old)
-                _state.add(transform(old))
+            _dirtyStates.find { it.file.absolutePath == path }?.let { old ->
+                _dirtyStates.remove(old)
+                _dirtyStates.add(transform(old))
             }
         }
     }

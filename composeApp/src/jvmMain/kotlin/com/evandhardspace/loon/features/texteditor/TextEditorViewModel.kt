@@ -8,6 +8,8 @@ import androidx.compose.runtime.snapshots.SnapshotStateMap
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.lifecycle.ViewModel
 import com.evandhardspace.loon.presentation.state.DirtyFilesState
+import com.evandhardspace.loon.presentation.state.SelectedFileState
+import com.evandhardspace.loon.presentation.state.getState
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.cancel
@@ -17,7 +19,8 @@ import java.io.File
 import kotlin.collections.get
 
 class TextEditorGlobalViewModel(
-    private val dirtyFileState: DirtyFilesState = DirtyFilesState(),
+    private val dirtyFileState: DirtyFilesState = getState(),
+    private val selectedFileState: SelectedFileState = getState(),
 ) : ViewModel() {
     val holders: SnapshotStateMap<String, TextEditorHolder> = mutableStateMapOf()
 
@@ -25,28 +28,25 @@ class TextEditorGlobalViewModel(
         get() = holders[selected]?.textState ?: TextFieldValue()
     val isDirty: Boolean
         get() = selected?.let { s ->
-            dirtyFileState.state
+            dirtyFileState.dirtyStates
                 .find { it.file.absolutePath == s }
                 ?.isDirty
                 ?: false
         } ?: false
 
-    var selected: String? by mutableStateOf(null)
-        private set
+    val selected: String?
+        get() = selectedFileState.selectedFile?.absolutePath
 
-    fun changeSelected(newSelected: String?) {
-        selected = newSelected
-    }
-
-    fun addHolder(filePath: String) {
-        if (holders[filePath] != null) return
-        dirtyFileState.add(File(filePath))
-        holders[filePath] = TextEditorHolder(
-            selectedPath = filePath,
+    fun addHolder(file: File) {
+        if(file.extension.lowercase() == "png" || file.extension.lowercase() == "jpg") return
+        if (holders[file.absolutePath] != null) return
+        dirtyFileState.add(file)
+        holders[file.absolutePath] = TextEditorHolder(
+            selectedPath = file.absolutePath,
             updateIsDirty = { isDirty ->
-                dirtyFileState.updateIsDirty(filePath, isDirty)
+                dirtyFileState.updateIsDirty(file.absolutePath, isDirty)
             },
-            isDirty = { dirtyFileState.state.find { it.file.absolutePath == filePath }?.isDirty ?: false }
+            isDirty = { dirtyFileState.dirtyStates.find { it.file.absolutePath == file.absolutePath }?.isDirty ?: false }
         )
     }
 

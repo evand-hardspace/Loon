@@ -26,6 +26,8 @@ import androidx.compose.ui.input.pointer.onPointerEvent
 import androidx.compose.ui.input.pointer.pointerHoverIcon
 import androidx.compose.ui.unit.dp
 import com.evandhardspace.loon.presentation.state.DirtyFilesState
+import com.evandhardspace.loon.presentation.state.SelectedFileState
+import com.evandhardspace.loon.presentation.state.getState
 import org.jetbrains.skiko.Cursor
 import java.io.File
 
@@ -34,10 +36,11 @@ import java.io.File
 fun TabPanel(
     modifier: Modifier = Modifier,
     state: EditorState,
-    onFileSelected: (File) -> Unit,
-    onFileClosed: (File) -> Unit,
+    onTabClick: (File) -> Unit,
+    onTabClosed: (File) -> Unit,
 ) {
-    val dirtyFilesState = remember { DirtyFilesState() }
+    val dirtyFilesState: DirtyFilesState = getState()
+    val selectedFileState: SelectedFileState = remember { getState() }
 
     if (state.tabs.isEmpty()) {
         Spacer(Modifier.height(20.dp))
@@ -50,12 +53,12 @@ fun TabPanel(
             .tabs
             .filter { it.isFile }
             .forEach { file ->
-                val selected = file == state.selectedFile
-                val isDirty = dirtyFilesState.state.find { it.file.absolutePath == file.absolutePath }?.isDirty ?: false
+                val selected = file == selectedFileState.selectedFile
+                val isDirty = dirtyFilesState.dirtyStates.find { it.file.absolutePath == file.absolutePath }?.isDirty ?: false
                 var isHovered by remember { mutableStateOf(false) }
                 Column(
                     modifier = Modifier
-                        .clickable(onClick = { onFileSelected(file) })
+                        .clickable(onClick = { onTabClick(file) })
                         .onPointerEvent(PointerEventType.Enter) { isHovered = true }
                         .onPointerEvent(PointerEventType.Exit) { isHovered = false }
                         .background(if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.background)
@@ -91,7 +94,7 @@ fun TabPanel(
                             modifier = Modifier
                                 .size(16.dp)
                                 .clickable {
-                                    onFileClosed(file)
+                                    onTabClosed(file)
                                 }
                                 .pointerHoverIcon(PointerIcon(Cursor(Cursor.HAND_CURSOR)))
                         )
