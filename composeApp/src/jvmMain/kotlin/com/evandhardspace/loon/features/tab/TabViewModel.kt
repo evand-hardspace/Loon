@@ -1,48 +1,34 @@
 package com.evandhardspace.loon.features.tab
 
-import androidx.compose.runtime.Immutable
+import androidx.compose.runtime.snapshotFlow
 import androidx.lifecycle.ViewModel
 import com.evandhardspace.loon.presentation.state.SelectedFileState
+import com.evandhardspace.loon.presentation.state.TabsState
 import com.evandhardspace.loon.presentation.state.getState
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.update
 import java.io.File
 
 class TabViewModel(
     private val selectedFileState: SelectedFileState = getState(),
+    private val tabsState: TabsState = getState(),
 ) : ViewModel() {
-    private val _state = MutableStateFlow(EditorState())
-    val state = _state.asStateFlow()
+    val tabs
+        get() = tabsState.tabs
+
+    val selectedTab
+        get() = selectedFileState.selectedFile
 
     fun addTab(file: File) {
         selectedFileState.selectFile(file)
-        if (file in state.value.tabs) return
-        _state.update {
-            val newTabs = it.tabs + file
-            it.copy(
-                tabs = newTabs,
-            )
-        }
+        if (file in tabs) return
+        tabsState.addTab(file)
     }
 
     fun onTabClosed(file: File) {
-        if (file !in state.value.tabs) return
+        if (file !in tabs) return
         val selectedFile = selectedFileState.selectedFile
-        val newTabs = _state.value.tabs - file
+        tabsState.removeTab(file)
         selectedFileState.selectFile(
-            if (newTabs.contains(selectedFile)) selectedFile else newTabs.lastOrNull()
+            if (selectedFile in tabs) selectedFile else tabs.lastOrNull()
         )
-        _state.update {
-            val newTabs = it.tabs - file
-            it.copy(
-                tabs = newTabs,
-            )
-        }
     }
 }
-
-@Immutable
-data class EditorState(
-    val tabs: List<File> = emptyList(),
-)

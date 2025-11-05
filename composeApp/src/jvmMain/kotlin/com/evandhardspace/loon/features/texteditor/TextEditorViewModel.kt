@@ -7,13 +7,17 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshots.SnapshotStateMap
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import com.evandhardspace.loon.presentation.state.DirtyFilesState
 import com.evandhardspace.loon.presentation.state.SelectedFileState
+import com.evandhardspace.loon.presentation.state.TabsState
 import com.evandhardspace.loon.presentation.state.getState
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 import java.io.File
 import kotlin.collections.get
@@ -21,6 +25,7 @@ import kotlin.collections.get
 class TextEditorGlobalViewModel(
     private val dirtyFileState: DirtyFilesState = getState(),
     private val selectedFileState: SelectedFileState = getState(),
+    tabsState: TabsState = getState(),
 ) : ViewModel() {
     val holders: SnapshotStateMap<String, TextEditorHolder> = mutableStateMapOf()
 
@@ -37,8 +42,29 @@ class TextEditorGlobalViewModel(
     val selected: String?
         get() = selectedFileState.selectedFile?.absolutePath
 
-    fun addHolder(file: File) {
-        if(file.extension.lowercase() == "png" || file.extension.lowercase() == "jpg") return
+    init {
+        tabsState.tabsAsFlow
+            .onEach { tabs: List<File> ->
+                val current = holders.keys.toSet() // Create a snapshot copy
+                val new = tabs.map { it.absolutePath }.toSet()
+
+                val removed = current - new
+
+                removed.forEach { path ->
+                    removeHolder(path)
+                }
+            }
+            .launchIn(viewModelScope) // Todo: optimize
+
+        selectedFileState.selectedFileAsFlow
+            .onEach { file ->
+                file?.let { if (it.isFile) addHolder(it) }
+            }
+            .launchIn(viewModelScope)
+    }
+
+    private fun addHolder(file: File) {
+        if (file.extension.lowercase() == "png" || file.extension.lowercase() == "jpg") return
         if (holders[file.absolutePath] != null) return
         dirtyFileState.add(file)
         holders[file.absolutePath] = TextEditorHolder(
@@ -46,11 +72,13 @@ class TextEditorGlobalViewModel(
             updateIsDirty = { isDirty ->
                 dirtyFileState.updateIsDirty(file.absolutePath, isDirty)
             },
-            isDirty = { dirtyFileState.dirtyStates.find { it.file.absolutePath == file.absolutePath }?.isDirty ?: false }
+            isDirty = {
+                dirtyFileState.dirtyStates.find { it.file.absolutePath == file.absolutePath }?.isDirty ?: false
+            }
         )
     }
 
-    fun removeHolder(filePath: String) {
+    private fun removeHolder(filePath: String) {
         dirtyFileState.remove(filePath)
         val holder = holders.remove(filePath)
         holder?.onClear()

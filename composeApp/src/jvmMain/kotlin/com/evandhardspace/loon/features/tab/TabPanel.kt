@@ -35,25 +35,24 @@ import java.io.File
 @Composable
 fun TabPanel(
     modifier: Modifier = Modifier,
-    state: EditorState,
+    tabs: List<File>,
+    selectedTab: File?,
     onTabClick: (File) -> Unit,
     onTabClosed: (File) -> Unit,
 ) {
     val dirtyFilesState: DirtyFilesState = getState()
-    val selectedFileState: SelectedFileState = remember { getState() }
 
-    if (state.tabs.isEmpty()) {
+    if (tabs.isEmpty()) {
         Spacer(Modifier.height(20.dp))
         return
     }
     Row(
         modifier = modifier.horizontalScroll(rememberScrollState())
     ) {
-        state
-            .tabs
+            tabs
             .filter { it.isFile }
             .forEach { file ->
-                val selected = file == selectedFileState.selectedFile
+                val selected = file == selectedTab
                 val isDirty = dirtyFilesState.dirtyStates.find { it.file.absolutePath == file.absolutePath }?.isDirty ?: false
                 var isHovered by remember { mutableStateOf(false) }
                 Column(

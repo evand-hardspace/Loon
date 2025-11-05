@@ -42,7 +42,6 @@ fun EditorScene(
     tabViewModel: TabViewModel = viewModel { TabViewModel() }, // TODO get rid on this level
     textEditorViewModel: TextEditorGlobalViewModel = viewModel { TextEditorGlobalViewModel() },
 ) {
-    val state by tabViewModel.state.collectAsStateWithLifecycle()
     val selectedFileState: SelectedFileState = remember { getState() }
 
     SplitPane(
@@ -55,7 +54,6 @@ fun EditorScene(
                             event.key == Key.W -> {
                         selectedFileState.selectedFile?.let {
                             tabViewModel.onTabClosed(it)
-                            textEditorViewModel.removeHolder(it.path)
                         }
                         true
                     }
@@ -85,13 +83,9 @@ fun EditorScene(
                         if (it.isDirectory.not()) {
                             tabViewModel.addTab(it)
                         }
-                        if (it.isFile) {
-                            textEditorViewModel.addHolder(it)
-                        }
                     },
                     onDeleteFile = {
                         tabViewModel.onTabClosed(it)
-                        textEditorViewModel.removeHolder(it.path)
                     },
                 )
             }
@@ -99,10 +93,10 @@ fun EditorScene(
         rightContent = {
             Column {
                 TabPanel(
-                    state = state,
+                    tabs = tabViewModel.tabs,
+                    selectedTab = tabViewModel.selectedTab,
                     onTabClosed = { file ->
                         tabViewModel.onTabClosed(file)
-                        textEditorViewModel.removeHolder(file.path)
                     },
                     onTabClick = { file ->
                         tabViewModel.addTab(file)
