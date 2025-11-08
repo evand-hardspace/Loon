@@ -10,6 +10,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.evandhardspace.loon.presentation.state.DirtyFilesState
 import com.evandhardspace.loon.presentation.state.SelectedFileState
+import com.evandhardspace.loon.presentation.state.TabEvent
 import com.evandhardspace.loon.presentation.state.TabsState
 import com.evandhardspace.loon.presentation.state.getState
 import kotlinx.coroutines.CoroutineScope
@@ -43,22 +44,13 @@ class TextEditorGlobalViewModel(
         get() = selectedFileState.selectedFile?.absolutePath
 
     init {
-        tabsState.tabsAsFlow
-            .onEach { tabs: List<File> ->
-                val current = holders.keys.toSet() // Create a snapshot copy
-                val new = tabs.map { it.absolutePath }.toSet()
-
-                val removed = current - new
-
-                removed.forEach { path ->
-                    removeHolder(path)
+        tabsState
+            .tabEvents
+            .onEach { event ->
+                when(event) {
+                    is TabEvent.AddedTab -> addHolder(event.file)
+                    is TabEvent.RemovedTab -> removeHolder(event.file.absolutePath)
                 }
-            }
-            .launchIn(viewModelScope) // Todo: optimize
-
-        selectedFileState.selectedFileAsFlow
-            .onEach { file ->
-                file?.let { if (it.isFile) addHolder(it) }
             }
             .launchIn(viewModelScope)
     }
