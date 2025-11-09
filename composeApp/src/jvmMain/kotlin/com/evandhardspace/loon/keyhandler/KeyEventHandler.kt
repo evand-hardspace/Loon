@@ -19,7 +19,7 @@ val LocalKeyEventHandler: ProvidableCompositionLocal<KeyEventHandler> = composit
 
 @Composable
 inline fun <reified T : AppKeyEvent> handleKeyEvent(
-    name: String,
+    name: String, // todo: thing about better key
     noinline muteKeyEvents: (MutedEventsBuilder.() -> Unit)? = null,
     noinline action: (T) -> Boolean,
 ) {
@@ -33,6 +33,22 @@ inline fun <reified T : AppKeyEvent> handleKeyEvent(
         onDispose {
             keyEventHandler.unsubscribe<T>(name)
             mutedEventsBuilder.unmuteAll()
+        }
+    }
+}
+
+// todo: not to use outside dialogs unless unmute logic is added
+@Composable
+inline fun <reified T : AppKeyEvent> forceHandleKeyEvent(
+    name: String, // todo: thing about better key
+    noinline action: (T) -> Boolean,
+) {
+    val keyEventHandler = LocalKeyEventHandler.current
+
+    DisposableEffect(action) {
+        keyEventHandler.forceSubscribe<T>(name, action)
+        onDispose {
+            keyEventHandler.forceUnsubscribe<T>(name)
         }
     }
 }
@@ -64,6 +80,7 @@ internal class DefaultMutedEventsBuilder(
 
 class KeyEventHandler {
     private val listeners = mutableMapOf<KClass<out AppKeyEvent>, MutableMap<String, (AppKeyEvent) -> Boolean>>()
+    private val forceListeners = mutableMapOf<KClass<out AppKeyEvent>, MutableMap<String, (AppKeyEvent) -> Boolean>>()
     private val mutedEventsStack = mutableMapOf<KClass<out AppKeyEvent>, Int>()
 
     @Suppress("UNCHECKED_CAST")
@@ -72,12 +89,34 @@ class KeyEventHandler {
         listeners.getOrPut(eventType) { mutableMapOf() }[key] = typedListener
     }
 
+    @Suppress("UNCHECKED_CAST")
+    fun <T : AppKeyEvent> forceSubscribe(eventType: KClass<T>, key: String, listener: (T) -> Boolean) {
+        val typedListener = listener as (AppKeyEvent) -> Boolean
+        forceListeners.getOrPut(eventType) { mutableMapOf() }[key] = typedListener
+    }
+
+    inline fun <reified T : AppKeyEvent> forceSubscribe(key: String, noinline listener: (T) -> Boolean) {
+        forceSubscribe(T::class, key, listener)
+    }
+
     inline fun <reified T : AppKeyEvent> subscribe(key: String, noinline listener: (T) -> Boolean) {
         subscribe(T::class, key, listener)
     }
 
     fun <T : AppKeyEvent> unsubscribe(eventType: KClass<T>, key: String) {
         listeners[eventType]?.remove(key)
+    }
+
+    inline fun <reified T : AppKeyEvent> unsubscribe(key: String) {
+        unsubscribe(T::class, key)
+    }
+
+    fun <T : AppKeyEvent> forceUnsubscribe(eventType: KClass<T>, key: String) {
+        forceListeners[eventType]?.remove(key)
+    }
+
+    inline fun <reified T : AppKeyEvent> forceUnsubscribe(key: String) {
+        forceUnsubscribe(T::class, key)
     }
 
     fun <T : AppKeyEvent> muteEvent(event: KClass<T>) {
@@ -98,11 +137,8 @@ class KeyEventHandler {
         mutedEventsStack.remove(event)
     }
 
-    inline fun <reified T : AppKeyEvent> unsubscribe(key: String) {
-        unsubscribe(T::class, key)
-    }
-
     private fun emit(event: AppKeyEvent): Boolean {
+        if(forceListeners[event::class]?.values?.lastOrNull()?.invoke(event) == true) return true
         if (event::class in mutedEventsStack) return false
         return listeners[event::class]?.values?.lastOrNull()?.invoke(event) ?: false
     }

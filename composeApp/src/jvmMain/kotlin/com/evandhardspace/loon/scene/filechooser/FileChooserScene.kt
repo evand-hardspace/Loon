@@ -32,6 +32,7 @@ import androidx.compose.ui.window.Dialog
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.evandhardspace.loon.coreutils.OnEffect
+import com.evandhardspace.loon.dialog.AppDialog
 import com.evandhardspace.loon.presentation.FileChooser
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -132,7 +133,10 @@ internal fun FileChooserContent(
     val error = state.error
 
     if (error != null) {
-        Dialog(onDismissRequest = { FileChooserAction.DismissError.perform() }) {
+        AppDialog(
+            onDismissRequest = { FileChooserAction.DismissError.perform() },
+            onSubmitAction = { FileChooserAction.DismissError.perform() },
+        ) {
             Surface(
                 shape = RoundedCornerShape(16.dp),
                 tonalElevation = 8.dp,

@@ -33,7 +33,6 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -47,7 +46,7 @@ import androidx.compose.ui.input.pointer.onPointerEvent
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.coerceAtLeast
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.window.Dialog
+import com.evandhardspace.loon.dialog.AppDialog
 import com.evandhardspace.loon.keyhandler.AppKeyEvent
 import com.evandhardspace.loon.keyhandler.handleKeyEvent
 import com.evandhardspace.loon.presentation.state.CreateType
@@ -126,12 +125,25 @@ fun FileTree(
         true
     }
 
-    // Name input dialog
-    if (showNameDialogFile != null) {
-        Dialog(onDismissRequest = {
+    val newFileDialogClick = {
+        if (newFileName.isNotBlank() && !fileExists) {
+            if (createType == CreateType.FILE) {
+                fileSlice.createFile(showNameDialogFile ?: root, newFileName)
+            } else {
+                fileSlice.createFolder(showNameDialogFile ?: root, newFileName)
+            }
             showNameDialogFile = null
             newFileName = ""
-        }) {
+        }
+    }
+    if (showNameDialogFile != null) {
+        AppDialog(
+            onDismissRequest = {
+                showNameDialogFile = null
+                newFileName = ""
+            },
+            onSubmitAction = newFileDialogClick,
+        ) {
             Surface(
                 shape = RoundedCornerShape(8.dp),
                 color = MaterialTheme.colorScheme.surface,
@@ -177,17 +189,7 @@ fun FileTree(
                         }
                         Spacer(modifier = Modifier.width(8.dp))
                         Button(
-                            onClick = {
-                                if (newFileName.isNotBlank() && !fileExists) {
-                                    if (createType == CreateType.FILE) {
-                                        fileSlice.createFile(showNameDialogFile ?: root, newFileName)
-                                    } else {
-                                        fileSlice.createFolder(showNameDialogFile ?: root, newFileName)
-                                    }
-                                    showNameDialogFile = null
-                                    newFileName = ""
-                                }
-                            },
+                            onClick = newFileDialogClick,
                             enabled = !fileNameIsBlank && !fileExists
                         ) {
                             Text("Create")
@@ -198,9 +200,18 @@ fun FileTree(
         }
     }
 
-    // Delete confirmation dialog
     showDeleteDialogFile?.let { file ->
-        Dialog(onDismissRequest = { showDeleteDialogFile = null }) {
+        val deleteFileDialogClick = {
+            fileSlice.findNode(file)?.let { node ->
+                fileSlice.deleteNode(node)
+                onDeleteFile(file)
+            }
+            showDeleteDialogFile = null
+        }
+        AppDialog(
+            onDismissRequest = { showDeleteDialogFile = null },
+            onSubmitAction = deleteFileDialogClick,
+        ) {
             Surface(
                 shape = RoundedCornerShape(8.dp),
                 color = MaterialTheme.colorScheme.surface,
@@ -230,13 +241,7 @@ fun FileTree(
                         }
                         Spacer(modifier = Modifier.width(8.dp))
                         Button(
-                            onClick = {
-                                fileSlice.findNode(file)?.let { node ->
-                                    fileSlice.deleteNode(node)
-                                    onDeleteFile(file)
-                                }
-                                showDeleteDialogFile = null
-                            },
+                            onClick = deleteFileDialogClick,
                             colors = ButtonDefaults.buttonColors(
                                 containerColor = MaterialTheme.colorScheme.error
                             )
