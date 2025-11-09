@@ -1,4 +1,4 @@
-package com.evandhardspace.loon.features.filetree
+package com.evandhardspace.loon.features.imagearea
 
 import androidx.compose.foundation.Image
 import androidx.compose.material3.Text

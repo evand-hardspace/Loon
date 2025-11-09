@@ -1,4 +1,4 @@
-package com.evandhardspace.loon.features.texteditor
+package com.evandhardspace.loon.features.texteditorarea
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -8,7 +8,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Save
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -34,25 +33,25 @@ import java.io.File
 
 @Composable
 fun TextEditorScreen(
-    viewModel: TextEditorGlobalViewModel,
+    holder: TextEditorHolder,
     modifier: Modifier = Modifier,
 ) {
     TextEditorContent(
-        selectedPath = viewModel.selected,
-        isDirty = viewModel.isDirty,
-        save = viewModel::save,
-        textState = viewModel.textState,
-        getCharCount = viewModel::getCharCount,
-        getWordCount = viewModel::getWordCount,
-        getLineCount = viewModel::getLineCount,
-        updateText = viewModel::updateText,
+        selectedFile = holder.selectedFile,
+        isDirty = holder.isDirty,
+        save = holder::save,
+        textState = holder.textState,
+        getCharCount = holder::getCharCount,
+        getWordCount = holder::getWordCount,
+        getLineCount = holder::getLineCount,
+        updateText = holder::updateText,
         modifier = modifier,
     )
 }
 
 @Composable
 fun TextEditorContent(
-    selectedPath: String?,
+    selectedFile: File?,
     isDirty: Boolean,
     modifier: Modifier = Modifier,
     save: () -> Unit,
@@ -62,36 +61,6 @@ fun TextEditorContent(
     getLineCount: () -> Int,
     updateText: (TextFieldValue) -> Unit,
 ) {
-    when {
-        selectedPath == null -> {
-            Box(
-                modifier = modifier.fillMaxWidth(),
-                contentAlignment = Alignment.Center,
-            ) {
-                Text(
-                    text = "File is not selected",
-                    color = MaterialTheme.colorScheme.onBackground,
-                )
-            }
-            return
-        }
-
-        File(selectedPath).let { file ->
-            file.isFile.not() || file.extension != "txt"
-        } -> {
-            Box(
-                modifier = modifier.fillMaxWidth(),
-                contentAlignment = Alignment.Center,
-            ) {
-                Text(
-                    text = "Selected item is not a text or image file.",
-                    color = MaterialTheme.colorScheme.onPrimary,
-                )
-            }
-            return
-        }
-    }
-
     Column(
         modifier = modifier
             .fillMaxSize()
