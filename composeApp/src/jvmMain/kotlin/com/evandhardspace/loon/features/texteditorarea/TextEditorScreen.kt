@@ -1,35 +1,30 @@
 package com.evandhardspace.loon.features.texteditorarea
 
-import androidx.compose.foundation.background
+import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.text.BasicTextField
-import androidx.compose.foundation.verticalScroll
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.material.*
+import androidx.compose.material.Icon
+import androidx.compose.material.IconButton
+import androidx.compose.material.Surface
+import androidx.compose.material.Text
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Save
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
-import androidx.compose.ui.input.key.Key
-import androidx.compose.ui.input.key.KeyEventType
-import androidx.compose.ui.input.key.isCtrlPressed
-import androidx.compose.ui.input.key.isMetaPressed
-import androidx.compose.ui.input.key.key
-import androidx.compose.ui.input.key.onPreviewKeyEvent
-import androidx.compose.ui.input.key.type
+import androidx.compose.ui.input.key.*
 import androidx.compose.ui.input.pointer.PointerIcon
 import androidx.compose.ui.input.pointer.pointerHoverIcon
 import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import org.jetbrains.skiko.Cursor
-import java.io.File
 
 @Composable
 fun TextEditorScreen(
@@ -37,7 +32,6 @@ fun TextEditorScreen(
     modifier: Modifier = Modifier,
 ) {
     TextEditorContent(
-        selectedFile = holder.selectedFile,
         isDirty = holder.isDirty,
         save = holder::save,
         textState = holder.textState,
@@ -51,7 +45,6 @@ fun TextEditorScreen(
 
 @Composable
 fun TextEditorContent(
-    selectedFile: File?,
     isDirty: Boolean,
     modifier: Modifier = Modifier,
     save: () -> Unit,
@@ -61,6 +54,9 @@ fun TextEditorContent(
     getLineCount: () -> Int,
     updateText: (TextFieldValue) -> Unit,
 ) {
+    val verticalScrollState = rememberScrollState()
+    val horizontalScrollState = rememberScrollState()
+
     Column(
         modifier = modifier
             .fillMaxSize()
@@ -72,15 +68,14 @@ fun TextEditorContent(
                 .fillMaxWidth()
                 .weight(1f)
         ) {
-            val lineCount = getLineCount()
             Column(
                 modifier = Modifier
                     .background(Color(0xFF181818))
                     .padding(horizontal = 8.dp, vertical = 12.dp)
-                    .verticalScroll(rememberScrollState()),
+                    .verticalScroll(verticalScrollState, enabled = false), // Use same scroll state, disable direct scrolling
                 horizontalAlignment = Alignment.End
             ) {
-                repeat(lineCount) { index ->
+                repeat(getLineCount()) { index ->
                     Text(
                         text = "${index + 1}",
                         style = TextStyle(
@@ -102,53 +97,87 @@ fun TextEditorContent(
                     .background(Color(0xFF2A2A2A))
             )
 
-            // Text editor
-            BasicTextField(
-                value = textState,
-                onValueChange = updateText,
+            // Scrollable text editor container
+            Box(
                 modifier = Modifier
                     .fillMaxSize()
                     .background(Color(0xFF181818))
-                    .padding(horizontal = 16.dp, vertical = 12.dp)
-                    .onPreviewKeyEvent { event ->
-                        if (
-                            event.type == KeyEventType.KeyDown &&
-                            (event.isCtrlPressed || event.isMetaPressed) && // Meta = Command on macOS
-                            event.key == Key.S
-                        ) {
-                            save()
-                            true
-                        } else {
-                            false
-                        }
-                    },
-                textStyle = TextStyle(
-                    fontSize = 14.sp,
-                    fontFamily = FontFamily.Monospace,
-                    color = Color(0xFFE6E6E6),
-                    lineHeight = 20.sp,
-                    fontWeight = FontWeight.Normal
-                ),
-                cursorBrush = SolidColor(Color.White),
-                decorationBox = { innerTextField ->
-                    Box {
-                        if (textState.text.isEmpty()) {
-                            Text(
-                                text = "Start typing...",
-                                style = TextStyle(
-                                    fontSize = 14.sp,
-                                    fontFamily = FontFamily.Monospace,
-                                    color = Color(0xFF4A4A4A)
+            ) {
+                BasicTextField(
+                    value = textState,
+                    onValueChange = updateText,
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .verticalScroll(verticalScrollState)
+                        .horizontalScroll(horizontalScrollState)
+                        .padding(horizontal = 4.dp, vertical = 12.dp)
+                        .onPreviewKeyEvent { event ->
+                            if (
+                                event.type == KeyEventType.KeyDown &&
+                                (event.isCtrlPressed || event.isMetaPressed) &&
+                                event.key == Key.S
+                            ) {
+                                save()
+                                true
+                            } else {
+                                false
+                            }
+                        },
+                    textStyle = TextStyle(
+                        fontSize = 14.sp,
+                        fontFamily = FontFamily.Monospace,
+                        color = Color(0xFFE6E6E6),
+                        lineHeight = 20.sp,
+                        fontWeight = FontWeight.Normal
+                    ),
+                    cursorBrush = SolidColor(Color.White),
+                    decorationBox = { innerTextField ->
+                        Box {
+                            if (textState.text.isEmpty()) {
+                                Text(
+                                    text = "Start typing...",
+                                    style = TextStyle(
+                                        fontSize = 14.sp,
+                                        fontFamily = FontFamily.Monospace,
+                                        color = Color(0xFF4A4A4A)
+                                    )
                                 )
-                            )
+                            }
+                            innerTextField()
                         }
-                        innerTextField()
                     }
-                }
-            )
+                )
+
+                // Vertical scrollbar
+                VerticalScrollbar(
+                    modifier = Modifier
+                        .align(Alignment.CenterEnd)
+                        .fillMaxHeight(),
+                    adapter = rememberScrollbarAdapter(verticalScrollState),
+                    style = LocalScrollbarStyle.current.copy(
+                        unhoverColor = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f),
+                        hoverColor = MaterialTheme.colorScheme.onBackground,
+                        thickness = 6.dp,
+                    ),
+                )
+
+                // Horizontal scrollbar
+                HorizontalScrollbar(
+                    modifier = Modifier
+                        .align(Alignment.BottomStart)
+                        .fillMaxWidth()
+                        .padding(end = 12.dp),
+                    adapter = rememberScrollbarAdapter(horizontalScrollState),
+                    style = LocalScrollbarStyle.current.copy(
+                        unhoverColor = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f),
+                        hoverColor = MaterialTheme.colorScheme.onBackground,
+                        thickness = 6.dp,
+                    ),
+                )
+            }
         }
 
-        // Bottom status bar - more minimal
+        // Bottom status bar
         Surface(
             modifier = Modifier.fillMaxWidth(),
             color = Color(0xFF202020),
