@@ -41,6 +41,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.input.pointer.PointerEventType
 import androidx.compose.ui.input.pointer.onPointerEvent
 import androidx.compose.ui.text.style.TextOverflow
@@ -89,7 +91,7 @@ fun FileTree(
             StandardWatchEventKinds.ENTRY_CREATE,
             StandardWatchEventKinds.ENTRY_DELETE,
             StandardWatchEventKinds.ENTRY_MODIFY
-        )
+        ) // todo: move to presentation layer
 
         withContext(Dispatchers.IO) {
             while (true) {
@@ -136,7 +138,14 @@ fun FileTree(
             newFileName = ""
         }
     }
+
     if (showNameDialogFile != null) {
+        val focusRequester = remember { FocusRequester() }
+
+        LaunchedEffect(Unit) {
+            focusRequester.requestFocus()
+        }
+
         AppDialog(
             onDismissRequest = {
                 showNameDialogFile = null
@@ -165,7 +174,7 @@ fun FileTree(
                         },
                         isError = fileExists,
                         singleLine = true,
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier = Modifier.fillMaxWidth().focusRequester(focusRequester),
                     )
 
                     if (fileExists) {
