@@ -5,8 +5,10 @@ import androidx.compose.foundation.ContextMenuItem
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -15,6 +17,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -50,6 +53,8 @@ import androidx.compose.ui.input.key.isShiftPressed
 import androidx.compose.ui.input.key.onKeyEvent
 import androidx.compose.ui.input.pointer.PointerEventType
 import androidx.compose.ui.input.pointer.onPointerEvent
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.coerceAtLeast
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import com.evandhardspace.loon.presentation.state.CreateType
@@ -250,61 +255,69 @@ fun FileTree(
             )
         }
     ) {
-        LazyColumn(
-            modifier = modifier.onKeyEvent { event ->
-                when (event.type) {
-                    KeyEventType.KeyDown if event.isMetaPressed &&
-                            event.key == Key.Backspace &&
-                            selectedFile != null -> {
-                        showDeleteDialogFile = selectedFile
-                        true
-                    }
+        BoxWithConstraints {
+            LazyColumn(
+                modifier = modifier.then(
+                    if (maxWidth < 200.dp) Modifier.horizontalScroll(rememberScrollState()) else Modifier
+                )
+                    .width(maxWidth.coerceAtLeast(200.dp))
+                    .onKeyEvent { event ->
+                        when (event.type) {
+                            KeyEventType.KeyDown if event.isMetaPressed &&
+                                    event.key == Key.Backspace &&
+                                    selectedFile != null -> {
+                                showDeleteDialogFile = selectedFile
+                                true
+                            }
 
-                    KeyEventType.KeyDown if event.isMetaPressed &&
-                            event.key == Key.N -> {
-                        createType = CreateType.FILE
-                        newFileName = "untitled.txt"
-                        showNameDialogFile = selectedFile
-                        true
-                    }
+                            KeyEventType.KeyDown if event.isMetaPressed &&
+                                    event.key == Key.N -> {
+                                createType = CreateType.FILE
+                                newFileName = "untitled.txt"
+                                showNameDialogFile = selectedFile
+                                true
+                            }
 
-                    KeyEventType.KeyDown if event.isMetaPressed &&
-                            event.isShiftPressed &&
-                            event.key == Key.N -> {
-                        createType = CreateType.FOLDER
-                        newFileName = "untitled"
-                        showNameDialogFile = selectedFile
-                        true
-                    }
+                            KeyEventType.KeyDown if event.isMetaPressed &&
+                                    event.isShiftPressed &&
+                                    event.key == Key.N -> {
+                                createType = CreateType.FOLDER
+                                newFileName = "untitled"
+                                showNameDialogFile = selectedFile
+                                true
+                            }
 
-                    else -> false
-                }
-            }
-        ) {
-            fileSlice.rootNode?.let { root ->
-                item {
-                    FileNodeView(
-                        node = root,
-                        fileSlice = fileSlice,
-                        isDirty = { file -> dirtyFilesSlice.dirtyStates.find { it.file.absolutePath == file }?.isDirty ?: false },
-                        selectedFile = selectedFile,
-                        onFileSelect = onFileSelect,
-                        level = 0,
-                        onCreateFile = { file ->
-                            createType = CreateType.FILE
-                            newFileName = "untitled.txt"
-                            showNameDialogFile = file
-                        },
-                        onCreateFolder = { folder ->
-                            createType = CreateType.FOLDER
-                            newFileName = "untitled"
-                            showNameDialogFile = folder
-                        },
-                        onDeleteFile = { file ->
-                            showDeleteDialogFile = file
-                        },
-                        isRoot = true,
-                    )
+                            else -> false
+                        }
+                    }
+            ) {
+                fileSlice.rootNode?.let { root ->
+                    item {
+                        FileNodeView(
+                            node = root,
+                            fileSlice = fileSlice,
+                            isDirty = { file ->
+                                dirtyFilesSlice.dirtyStates.find { it.file.absolutePath == file }?.isDirty ?: false
+                            },
+                            selectedFile = selectedFile,
+                            onFileSelect = onFileSelect,
+                            level = 0,
+                            onCreateFile = { file ->
+                                createType = CreateType.FILE
+                                newFileName = "untitled.txt"
+                                showNameDialogFile = file
+                            },
+                            onCreateFolder = { folder ->
+                                createType = CreateType.FOLDER
+                                newFileName = "untitled"
+                                showNameDialogFile = folder
+                            },
+                            onDeleteFile = { file ->
+                                showDeleteDialogFile = file
+                            },
+                            isRoot = true,
+                        )
+                    }
                 }
             }
         }
@@ -367,7 +380,7 @@ fun FileNodeView(
                     }
                 )
                 .padding(vertical = 2.dp),
-            verticalAlignment = Alignment.CenterVertically,
+            verticalAlignment = Alignment.Top,
         ) {
             if (node.file.isDirectory) {
                 Icon(
@@ -392,20 +405,11 @@ fun FileNodeView(
                 tint = if (isSelected) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onBackground,
             )
             Text(
-                text = node.file.name.ifEmpty { node.file.path },
+                text = node.file.name.ifEmpty { node.file.path } + if(isDirty(node.file.absolutePath)) Typography.bullet else "",
                 color = if (isSelected) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onBackground,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
             )
-            if (isDirty(node.file.absolutePath)) {
-                Spacer(Modifier.width(4.dp))
-                Box(
-                    modifier = Modifier
-                        .clip(CircleShape)
-                        .background(
-                            if (isSelected) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onBackground
-                        )
-                        .size(6.dp)
-                )
-            }
         }
     }
 
