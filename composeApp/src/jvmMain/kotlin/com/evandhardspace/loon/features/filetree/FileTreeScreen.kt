@@ -310,6 +310,9 @@ fun FileNodeView(
 
     ContextMenuArea(
         items = {
+            if (!isSelected) {
+                onFileSelect(node.file)
+            }
             listOf(
                 ContextMenuItem("New File") { onCreateFile() },
                 ContextMenuItem("New Folder") { onCreateFolder() },
