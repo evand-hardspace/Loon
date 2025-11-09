@@ -25,6 +25,9 @@ import androidx.compose.ui.input.pointer.PointerIcon
 import androidx.compose.ui.input.pointer.onPointerEvent
 import androidx.compose.ui.input.pointer.pointerHoverIcon
 import androidx.compose.ui.unit.dp
+import com.evandhardspace.loon.keyhandler.AppKeyEvent
+import com.evandhardspace.loon.keyhandler.handleKeyEvent
+import com.evandhardspace.loon.keyhandler.mute
 import com.evandhardspace.loon.presentation.state.DirtyFilesSlice
 import com.evandhardspace.loon.presentation.state.getSlice
 import org.jetbrains.skiko.Cursor
@@ -41,6 +44,11 @@ fun TabPanel(
 ) {
     val dirtyFilesSlice: DirtyFilesSlice = getSlice()
 
+    handleKeyEvent<AppKeyEvent.Close>("tab") {
+        selectedTab?.let { onTabClosed(it) }
+        true
+    }
+
     if (tabs.isEmpty()) {
         Spacer(Modifier.height(20.dp))
         return
@@ -48,7 +56,7 @@ fun TabPanel(
     Row(
         modifier = modifier.horizontalScroll(rememberScrollState())
     ) {
-            tabs
+        tabs
             .filter { it.isFile }
             .forEach { file ->
                 val selected = file == selectedTab
@@ -69,7 +77,6 @@ fun TabPanel(
                             .background(if (isHovered) MaterialTheme.colorScheme.primary.copy(alpha = 0.6f) else Color.Transparent)
                             .padding(horizontal = 8.dp, vertical = 4.dp)
                     ) {
-                        // Dirty indicator (blue dot)
                         if (isDirty) {
                             Box(
                                 modifier = Modifier

@@ -7,7 +7,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -18,7 +17,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material3.Icon
@@ -35,6 +33,7 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -43,20 +42,14 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.input.key.Key
-import androidx.compose.ui.input.key.KeyEventType
-import androidx.compose.ui.input.key.key
-import androidx.compose.ui.input.key.type
-import androidx.compose.ui.input.key.isMetaPressed
-import androidx.compose.ui.input.key.isShiftPressed
-import androidx.compose.ui.input.key.onKeyEvent
 import androidx.compose.ui.input.pointer.PointerEventType
 import androidx.compose.ui.input.pointer.onPointerEvent
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.coerceAtLeast
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
+import com.evandhardspace.loon.keyhandler.AppKeyEvent
+import com.evandhardspace.loon.keyhandler.handleKeyEvent
 import com.evandhardspace.loon.presentation.state.CreateType
 import com.evandhardspace.loon.presentation.state.DirtyFilesSlice
 import com.evandhardspace.loon.presentation.state.FileNode
@@ -115,6 +108,23 @@ fun FileTree(
         ?: root
     val fileExists = File(targetDir, newFileName).exists()
     val fileNameIsBlank = newFileName.isBlank()
+
+    handleKeyEvent<AppKeyEvent.New>("filetree") { event ->
+        if (event.isShiftPressed) {
+            createType = CreateType.FOLDER
+            newFileName = "untitled"
+        } else {
+            createType = CreateType.FILE
+            newFileName = "untitled.txt"
+        }
+        showNameDialogFile = selectedFile ?: root
+        true
+    }
+
+    handleKeyEvent<AppKeyEvent.Remove>("filetree") {
+        showDeleteDialogFile = selectedFileSlice.selectedFileOrDirectory
+        true
+    }
 
     // Name input dialog
     if (showNameDialogFile != null) {
@@ -261,35 +271,6 @@ fun FileTree(
                     if (maxWidth < 200.dp) Modifier.horizontalScroll(rememberScrollState()) else Modifier
                 )
                     .width(maxWidth.coerceAtLeast(200.dp))
-                    .onKeyEvent { event ->
-                        when (event.type) {
-                            KeyEventType.KeyDown if event.isMetaPressed &&
-                                    event.key == Key.Backspace &&
-                                    selectedFile != null -> {
-                                showDeleteDialogFile = selectedFile
-                                true
-                            }
-
-                            KeyEventType.KeyDown if event.isMetaPressed &&
-                                    event.key == Key.N -> {
-                                createType = CreateType.FILE
-                                newFileName = "untitled.txt"
-                                showNameDialogFile = selectedFile
-                                true
-                            }
-
-                            KeyEventType.KeyDown if event.isMetaPressed &&
-                                    event.isShiftPressed &&
-                                    event.key == Key.N -> {
-                                createType = CreateType.FOLDER
-                                newFileName = "untitled"
-                                showNameDialogFile = selectedFile
-                                true
-                            }
-
-                            else -> false
-                        }
-                    }
             ) {
                 fileSlice.rootNode?.let { root ->
                     item {
@@ -405,7 +386,7 @@ fun FileNodeView(
                 tint = if (isSelected) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onBackground,
             )
             Text(
-                text = node.file.name.ifEmpty { node.file.path } + if(isDirty(node.file.absolutePath)) Typography.bullet else "",
+                text = node.file.name.ifEmpty { node.file.path } + if (isDirty(node.file.absolutePath)) Typography.bullet else "",
                 color = if (isSelected) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onBackground,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,

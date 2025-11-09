@@ -18,12 +18,6 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.input.key.Key
-import androidx.compose.ui.input.key.KeyEventType
-import androidx.compose.ui.input.key.isMetaPressed
-import androidx.compose.ui.input.key.key
-import androidx.compose.ui.input.key.onKeyEvent
-import androidx.compose.ui.input.key.type
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.evandhardspace.loon.features.filetree.FileTree
@@ -58,21 +52,7 @@ fun EditorScene(
 
     SplitPane(
         modifier = modifier
-            .background(MaterialTheme.colorScheme.background)
-            .onKeyEvent { event ->
-                when {
-                    event.type == KeyEventType.KeyDown &&
-                            event.isMetaPressed &&
-                            event.key == Key.W -> {
-                        selectedFileSlice.selectedFile?.let {
-                            tabViewModel.onTabClosed(it)
-                        }
-                        true
-                    }
-
-                    else -> false
-                }
-            },
+            .background(MaterialTheme.colorScheme.background),
         leftContent = {
             Column(modifier = Modifier.padding(start = 8.dp)) {
                 IconButton(

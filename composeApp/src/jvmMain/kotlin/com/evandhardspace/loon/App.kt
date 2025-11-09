@@ -7,15 +7,18 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
-import com.evandhardspace.loon.scene.filechooser.FileChooserScene
-import com.evandhardspace.loon.scene.editor.EditorScene
 import com.evandhardspace.loon.coreutils.ui.LoonTheme
+import com.evandhardspace.loon.scene.editor.EditorScene
+import com.evandhardspace.loon.scene.filechooser.FileChooserScene
 
 @Composable
-fun App() {
+fun App(
+    modifier: Modifier = Modifier,
+) {
     LoonTheme {
         val navController = rememberNavController()
         NavHost(
+            modifier = modifier,
             navController = navController,
             startDestination = FileChooserRoute,
         ) {

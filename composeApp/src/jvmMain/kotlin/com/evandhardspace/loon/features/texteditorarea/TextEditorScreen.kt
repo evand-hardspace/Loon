@@ -15,7 +15,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
-import androidx.compose.ui.input.key.*
 import androidx.compose.ui.input.pointer.PointerIcon
 import androidx.compose.ui.input.pointer.pointerHoverIcon
 import androidx.compose.ui.text.TextStyle
@@ -24,6 +23,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.evandhardspace.loon.keyhandler.AppKeyEvent
+import com.evandhardspace.loon.keyhandler.handleKeyEvent
+import com.evandhardspace.loon.keyhandler.mute
 import org.jetbrains.skiko.Cursor
 
 @Composable
@@ -57,6 +59,16 @@ fun TextEditorContent(
     val verticalScrollState = rememberScrollState()
     val horizontalScrollState = rememberScrollState()
 
+    handleKeyEvent<AppKeyEvent.Save>(
+        name = "text_editor",
+        muteKeyEvents = {
+            mute<AppKeyEvent.Enter>()
+        }
+    ) {
+        save()
+        true
+    }
+
     Column(
         modifier = modifier
             .fillMaxSize()
@@ -72,7 +84,10 @@ fun TextEditorContent(
                 modifier = Modifier
                     .background(Color(0xFF181818))
                     .padding(horizontal = 8.dp, vertical = 12.dp)
-                    .verticalScroll(verticalScrollState, enabled = false), // Use same scroll state, disable direct scrolling
+                    .verticalScroll(
+                        verticalScrollState,
+                        enabled = false
+                    ), // Use same scroll state, disable direct scrolling
                 horizontalAlignment = Alignment.End
             ) {
                 repeat(getLineCount()) { index ->
@@ -110,19 +125,7 @@ fun TextEditorContent(
                         .fillMaxSize()
                         .verticalScroll(verticalScrollState)
                         .horizontalScroll(horizontalScrollState)
-                        .padding(horizontal = 4.dp, vertical = 12.dp)
-                        .onPreviewKeyEvent { event ->
-                            if (
-                                event.type == KeyEventType.KeyDown &&
-                                (event.isCtrlPressed || event.isMetaPressed) &&
-                                event.key == Key.S
-                            ) {
-                                save()
-                                true
-                            } else {
-                                false
-                            }
-                        },
+                        .padding(horizontal = 4.dp, vertical = 12.dp),
                     textStyle = TextStyle(
                         fontSize = 14.sp,
                         fontFamily = FontFamily.Monospace,
