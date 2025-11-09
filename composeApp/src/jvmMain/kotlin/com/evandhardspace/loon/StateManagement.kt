@@ -11,7 +11,7 @@ import com.evandhardspace.loon.presentation.state.TabsSlice
 import com.evandhardspace.loon.presentation.state.register
 import com.evandhardspace.loon.presentation.state.registerSlice
 
-fun initStates() {
+fun registerSlices() {
     registerSlice {
         register<DirtyFilesSlice> {
             DefaultDirtyFilesSlice()

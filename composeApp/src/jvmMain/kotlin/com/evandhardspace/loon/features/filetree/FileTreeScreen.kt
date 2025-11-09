@@ -71,8 +71,8 @@ fun FileTree(
     onDeleteFile: (File) -> Unit,
     onFileSelect: (File) -> Unit,
 ) {
-    var showNameDialog by remember { mutableStateOf(false) }
-    var showDeleteDialog by remember { mutableStateOf(false) }
+    var showNameDialogFile: File? by remember { mutableStateOf(null) }
+    var showDeleteDialogFile: File? by remember { mutableStateOf(null) }
     var createType by remember { mutableStateOf(CreateType.FILE) }
     var newFileName by remember { mutableStateOf("") }
 
@@ -105,16 +105,16 @@ fun FileTree(
     }
 
     val selectedFile = selectedFileSlice.selectedFileOrDirectory
-    val targetDir = selectedFile?.takeIf { it.isDirectory }
-        ?: selectedFile?.parentFile
+    val targetDir = showNameDialogFile?.takeIf { it.isDirectory }
+        ?: showNameDialogFile?.parentFile
         ?: root
     val fileExists = File(targetDir, newFileName).exists()
     val fileNameIsBlank = newFileName.isBlank()
 
     // Name input dialog
-    if (showNameDialog) {
+    if (showNameDialogFile != null) {
         Dialog(onDismissRequest = {
-            showNameDialog = false
+            showNameDialogFile = null
             newFileName = ""
         }) {
             Surface(
@@ -155,7 +155,7 @@ fun FileTree(
                         horizontalArrangement = Arrangement.End,
                     ) {
                         TextButton(onClick = {
-                            showNameDialog = false
+                            showNameDialogFile = null
                             newFileName = ""
                         }) {
                             Text("Cancel")
@@ -165,11 +165,11 @@ fun FileTree(
                             onClick = {
                                 if (newFileName.isNotBlank() && !fileExists) {
                                     if (createType == CreateType.FILE) {
-                                        fileSlice.createFile(selectedFile ?: root, newFileName)
+                                        fileSlice.createFile(showNameDialogFile ?: root, newFileName)
                                     } else {
-                                        fileSlice.createFolder(selectedFile ?: root, newFileName)
+                                        fileSlice.createFolder(showNameDialogFile ?: root, newFileName)
                                     }
-                                    showNameDialog = false
+                                    showNameDialogFile = null
                                     newFileName = ""
                                 }
                             },
@@ -184,8 +184,8 @@ fun FileTree(
     }
 
     // Delete confirmation dialog
-    if (showDeleteDialog && selectedFile != null) {
-        Dialog(onDismissRequest = { showDeleteDialog = false }) {
+    showDeleteDialogFile?.let { file ->
+        Dialog(onDismissRequest = { showDeleteDialogFile = null }) {
             Surface(
                 shape = RoundedCornerShape(8.dp),
                 color = MaterialTheme.colorScheme.surface,
@@ -193,14 +193,14 @@ fun FileTree(
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
                     Text(
-                        text = "Delete ${if (selectedFile.isDirectory) "Folder" else "File"}",
+                        text = "Delete ${if (file.isDirectory) "Folder" else "File"}",
                         style = MaterialTheme.typography.titleMedium,
                         color = MaterialTheme.colorScheme.onBackground,
                         modifier = Modifier.padding(bottom = 8.dp)
                     )
 
                     Text(
-                        text = "Are you sure you want to delete \"${selectedFile.name}\"?${if (selectedFile.isDirectory) " This will delete all contents." else ""}",
+                        text = "Are you sure you want to delete \"${file.name}\"?${if (file.isDirectory) " This will delete all contents." else ""}",
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onBackground,
                         modifier = Modifier.padding(bottom = 16.dp)
@@ -210,17 +210,17 @@ fun FileTree(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.End,
                     ) {
-                        TextButton(onClick = { showDeleteDialog = false }) {
+                        TextButton(onClick = { showDeleteDialogFile = null }) {
                             Text("Cancel")
                         }
                         Spacer(modifier = Modifier.width(8.dp))
                         Button(
                             onClick = {
-                                fileSlice.findNode(selectedFile)?.let { node ->
+                                fileSlice.findNode(file)?.let { node ->
                                     fileSlice.deleteNode(node)
-                                    onDeleteFile(selectedFile)
+                                    onDeleteFile(file)
                                 }
-                                showDeleteDialog = false
+                                showDeleteDialogFile = null
                             },
                             colors = ButtonDefaults.buttonColors(
                                 containerColor = MaterialTheme.colorScheme.error
@@ -234,59 +234,78 @@ fun FileTree(
         }
     }
 
-    LazyColumn(
-        modifier = modifier.onKeyEvent { event ->
-            when {
-                event.type == KeyEventType.KeyDown &&
-                        event.isMetaPressed &&
-                        event.key == Key.Backspace &&
-                        selectedFile != null -> {
-                    showDeleteDialog = true
-                    true
-                }
-                event.type == KeyEventType.KeyDown &&
-                        event.isMetaPressed &&
-                        event.key == Key.N -> {
+    ContextMenuArea(
+        items = {
+            listOf(
+                ContextMenuItem("New File") {
                     createType = CreateType.FILE
                     newFileName = "untitled.txt"
-                    showNameDialog = true
-                    true
-                }
-                event.type == KeyEventType.KeyDown &&
-                        event.isMetaPressed &&
-                        event.isShiftPressed &&
-                        event.key == Key.N -> {
+                    showNameDialogFile = root
+                },
+                ContextMenuItem("New Folder") {
                     createType = CreateType.FOLDER
                     newFileName = "untitled"
-                    showNameDialog = true
-                    true
-                }
-                else -> false
-            }
+                    showNameDialogFile = root
+                },
+            )
         }
     ) {
-        fileSlice.rootNode?.let { root ->
-            item {
-                FileNodeView(
-                    node = root,
-                    fileSlice = fileSlice,
-                    isDirty = { file -> dirtyFilesSlice.dirtyStates.find { it.file.absolutePath == file }?.isDirty ?: false },
-                    selectedFile = selectedFile,
-                    onFileSelect = onFileSelect,
-                    onCreateFile = {
+        LazyColumn(
+            modifier = modifier.onKeyEvent { event ->
+                when (event.type) {
+                    KeyEventType.KeyDown if event.isMetaPressed &&
+                            event.key == Key.Backspace &&
+                            selectedFile != null -> {
+                        showDeleteDialogFile = selectedFile
+                        true
+                    }
+
+                    KeyEventType.KeyDown if event.isMetaPressed &&
+                            event.key == Key.N -> {
                         createType = CreateType.FILE
                         newFileName = "untitled.txt"
-                        showNameDialog = true
-                    },
-                    onCreateFolder = {
+                        showNameDialogFile = selectedFile
+                        true
+                    }
+
+                    KeyEventType.KeyDown if event.isMetaPressed &&
+                            event.isShiftPressed &&
+                            event.key == Key.N -> {
                         createType = CreateType.FOLDER
                         newFileName = "untitled"
-                        showNameDialog = true
-                    },
-                    onDeleteFile = {
-                        showDeleteDialog = true
-                    },
-                )
+                        showNameDialogFile = selectedFile
+                        true
+                    }
+
+                    else -> false
+                }
+            }
+        ) {
+            fileSlice.rootNode?.let { root ->
+                item {
+                    FileNodeView(
+                        node = root,
+                        fileSlice = fileSlice,
+                        isDirty = { file -> dirtyFilesSlice.dirtyStates.find { it.file.absolutePath == file }?.isDirty ?: false },
+                        selectedFile = selectedFile,
+                        onFileSelect = onFileSelect,
+                        level = 0,
+                        onCreateFile = { file ->
+                            createType = CreateType.FILE
+                            newFileName = "untitled.txt"
+                            showNameDialogFile = file
+                        },
+                        onCreateFolder = { folder ->
+                            createType = CreateType.FOLDER
+                            newFileName = "untitled"
+                            showNameDialogFile = folder
+                        },
+                        onDeleteFile = { file ->
+                            showDeleteDialogFile = file
+                        },
+                        isRoot = true,
+                    )
+                }
             }
         }
     }
@@ -301,23 +320,26 @@ fun FileNodeView(
     selectedFile: File?,
     onFileSelect: (File) -> Unit,
     level: Int = 0,
-    onCreateFile: () -> Unit,
-    onCreateFolder: () -> Unit,
-    onDeleteFile: () -> Unit,
+    onCreateFile: (File) -> Unit,
+    onCreateFolder: (File) -> Unit,
+    onDeleteFile: (File) -> Unit,
+    isRoot: Boolean = false,
 ) {
     var isHovered by remember { mutableStateOf(false) }
     val isSelected = selectedFile?.absolutePath == node.file.absolutePath
 
     ContextMenuArea(
         items = {
-            if (!isSelected) {
-                onFileSelect(node.file)
-            }
             listOf(
-                ContextMenuItem("New File") { onCreateFile() },
-                ContextMenuItem("New Folder") { onCreateFolder() },
-                ContextMenuItem("Delete") { onDeleteFile() },
-            )
+                ContextMenuItem("New File") { onCreateFile(node.file) },
+                ContextMenuItem("New Folder") { onCreateFolder(node.file) },
+            ).let { items ->
+                if (!isRoot) {
+                    items + ContextMenuItem("Delete") { onDeleteFile(node.file) }
+                } else {
+                    items
+                }
+            }
         }
     ) {
         Row(
@@ -400,6 +422,7 @@ fun FileNodeView(
                     onCreateFile = onCreateFile,
                     onCreateFolder = onCreateFolder,
                     onDeleteFile = onDeleteFile,
+                    isRoot = false,
                 )
             }
         }

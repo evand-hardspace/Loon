@@ -2,6 +2,7 @@ package com.evandhardspace.loon.scene.editor
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -11,6 +12,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.key.Key
@@ -29,6 +32,7 @@ import com.evandhardspace.loon.features.texteditor.TextEditorScreen
 import com.evandhardspace.loon.coreutils.ui.SplitPane
 import com.evandhardspace.loon.features.tab.TabViewModel
 import com.evandhardspace.loon.presentation.state.SelectedFileSlice
+import com.evandhardspace.loon.presentation.state.clearSlices
 import com.evandhardspace.loon.presentation.state.getSlice
 import java.io.File
 
@@ -40,6 +44,11 @@ fun EditorScene(
     tabViewModel: TabViewModel = viewModel { TabViewModel() }, // TODO get rid on this level
     textEditorViewModel: TextEditorGlobalViewModel = viewModel { TextEditorGlobalViewModel() },
 ) {
+    DisposableEffect(Unit) {
+        onDispose {
+            clearSlices() // TODO: manage lifecycle
+        }
+    }
     val selectedFileSlice: SelectedFileSlice = remember { getSlice() }
 
     SplitPane(
@@ -85,6 +94,7 @@ fun EditorScene(
                     onDeleteFile = {
                         tabViewModel.onTabClosed(it)
                     },
+                    modifier = Modifier.fillMaxHeight(),
                 )
             }
         },
