@@ -7,7 +7,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import java.io.File
 
-interface FileState : State {
+interface FileSlice : Slice {
     val rootNode: FileNode?
     fun initialize(root: File)
     fun createFile(relativeTo: File, name: String): File?
@@ -20,7 +20,7 @@ interface FileState : State {
     fun toggleNode(node: FileNode)
 }
 
-internal class DefaultFileState : FileState {
+internal class DefaultFileSlice : FileSlice {
     override var rootNode: MutableFileNode? by mutableStateOf(null)
         private set
 

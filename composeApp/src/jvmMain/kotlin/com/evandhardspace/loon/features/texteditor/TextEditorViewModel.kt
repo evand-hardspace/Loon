@@ -8,11 +8,11 @@ import androidx.compose.runtime.snapshots.SnapshotStateMap
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.evandhardspace.loon.presentation.state.DirtyFilesState
-import com.evandhardspace.loon.presentation.state.SelectedFileState
+import com.evandhardspace.loon.presentation.state.DirtyFilesSlice
+import com.evandhardspace.loon.presentation.state.SelectedFileSlice
 import com.evandhardspace.loon.presentation.state.TabEvent
-import com.evandhardspace.loon.presentation.state.TabsState
-import com.evandhardspace.loon.presentation.state.getState
+import com.evandhardspace.loon.presentation.state.TabsSlice
+import com.evandhardspace.loon.presentation.state.getSlice
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.cancel
@@ -24,9 +24,9 @@ import java.io.File
 import kotlin.collections.get
 
 class TextEditorGlobalViewModel(
-    private val dirtyFileState: DirtyFilesState = getState(),
-    private val selectedFileState: SelectedFileState = getState(),
-    tabsState: TabsState = getState(),
+    private val dirtyFileState: DirtyFilesSlice = getSlice(),
+    private val selectedFileSlice: SelectedFileSlice = getSlice(),
+    tabsState: TabsSlice = getSlice(),
 ) : ViewModel() {
     val holders: SnapshotStateMap<String, TextEditorHolder> = mutableStateMapOf()
 
@@ -41,7 +41,7 @@ class TextEditorGlobalViewModel(
         } ?: false
 
     val selected: String?
-        get() = selectedFileState.selectedFile?.absolutePath
+        get() = selectedFileSlice.selectedFile?.absolutePath
 
     init {
         tabsState

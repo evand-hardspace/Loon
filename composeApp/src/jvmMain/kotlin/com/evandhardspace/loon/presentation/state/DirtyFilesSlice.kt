@@ -5,9 +5,9 @@ import androidx.compose.runtime.snapshots.Snapshot.Companion.withMutableSnapshot
 import androidx.compose.runtime.snapshots.SnapshotStateSet
 import java.io.File
 
-interface State
+interface Slice
 
-interface DirtyFilesState: State {
+interface DirtyFilesSlice: Slice {
     val dirtyStates: Set<DirtyState>
 
     fun updateIsDirty(
@@ -23,7 +23,7 @@ interface DirtyFilesState: State {
     fun remove(path: String)
 }
 
-internal class DefaultDirtyFilesState : DirtyFilesState {
+internal class DefaultDirtyFilesSlice : DirtyFilesSlice {
 
     private val _dirtyStates: SnapshotStateSet<DirtyState> = mutableStateSetOf()
     override val dirtyStates: Set<DirtyState> get() = _dirtyStates

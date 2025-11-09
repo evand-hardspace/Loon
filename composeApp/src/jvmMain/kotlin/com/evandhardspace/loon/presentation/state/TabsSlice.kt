@@ -11,7 +11,7 @@ import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.launch
 import java.io.File
 
-interface TabsState : State {
+interface TabsSlice : Slice {
     val tabs: List<File>
     val tabsAsFlow: Flow<List<File>>
     val tabEvents: Flow<TabEvent>
@@ -21,7 +21,7 @@ interface TabsState : State {
     fun removeTab(file: File)
 }
 
-internal class DefaultTabsState : TabsState {
+internal class DefaultTabsSlice : TabsSlice {
     private val scope = CoroutineScope(Dispatchers.Main.immediate)
 
     private val _tabs: SnapshotStateList<File> = mutableStateListOf()

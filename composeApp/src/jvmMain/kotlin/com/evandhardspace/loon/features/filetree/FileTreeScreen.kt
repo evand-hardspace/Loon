@@ -53,14 +53,11 @@ import androidx.compose.ui.input.pointer.onPointerEvent
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import com.evandhardspace.loon.presentation.state.CreateType
-import com.evandhardspace.loon.presentation.state.DirtyFilesState
+import com.evandhardspace.loon.presentation.state.DirtyFilesSlice
 import com.evandhardspace.loon.presentation.state.FileNode
-import com.evandhardspace.loon.presentation.state.FileState
-import com.evandhardspace.loon.presentation.state.SelectedFileState
-import com.evandhardspace.loon.presentation.state.createFileRelativeTo
-import com.evandhardspace.loon.presentation.state.createFolderRelativeTo
-import com.evandhardspace.loon.presentation.state.deleteFileOrDirectory
-import com.evandhardspace.loon.presentation.state.getState
+import com.evandhardspace.loon.presentation.state.FileSlice
+import com.evandhardspace.loon.presentation.state.SelectedFileSlice
+import com.evandhardspace.loon.presentation.state.getSlice
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.File
@@ -74,17 +71,17 @@ fun FileTree(
     onDeleteFile: (File) -> Unit,
     onFileSelect: (File) -> Unit,
 ) {
-    val fileState: FileState = remember { getState() }
     var showNameDialog by remember { mutableStateOf(false) }
     var showDeleteDialog by remember { mutableStateOf(false) }
     var createType by remember { mutableStateOf(CreateType.FILE) }
     var newFileName by remember { mutableStateOf("") }
 
-    val dirtyFilesState: DirtyFilesState = remember { getState() }
-    val selectedFileState: SelectedFileState = remember { getState() }
+    val fileSlice: FileSlice = remember { getSlice() }
+    val dirtyFilesSlice: DirtyFilesSlice = remember { getSlice() }
+    val selectedFileSlice: SelectedFileSlice = remember { getSlice() }
 
     LaunchedEffect(root) {
-        fileState.initialize(root)
+        fileSlice.initialize(root)
     }
 
     // Watch for external changes
@@ -102,12 +99,12 @@ fun FileTree(
                 val key = watchService.take()
                 key.pollEvents()
                 key.reset()
-                fileState.rootNode?.let { fileState.refreshNode(it) }
+                fileSlice.rootNode?.let { fileSlice.refreshNode(it) }
             }
         }
     }
 
-    val selectedFile = selectedFileState.selectedFileOrDirectory
+    val selectedFile = selectedFileSlice.selectedFileOrDirectory
     val targetDir = selectedFile?.takeIf { it.isDirectory }
         ?: selectedFile?.parentFile
         ?: root
@@ -168,9 +165,9 @@ fun FileTree(
                             onClick = {
                                 if (newFileName.isNotBlank() && !fileExists) {
                                     if (createType == CreateType.FILE) {
-                                        fileState.createFile(selectedFile ?: root, newFileName)
+                                        fileSlice.createFile(selectedFile ?: root, newFileName)
                                     } else {
-                                        fileState.createFolder(selectedFile ?: root, newFileName)
+                                        fileSlice.createFolder(selectedFile ?: root, newFileName)
                                     }
                                     showNameDialog = false
                                     newFileName = ""
@@ -219,8 +216,8 @@ fun FileTree(
                         Spacer(modifier = Modifier.width(8.dp))
                         Button(
                             onClick = {
-                                fileState.findNode(selectedFile)?.let { node ->
-                                    fileState.deleteNode(node)
+                                fileSlice.findNode(selectedFile)?.let { node ->
+                                    fileSlice.deleteNode(node)
                                     onDeleteFile(selectedFile)
                                 }
                                 showDeleteDialog = false
@@ -268,12 +265,12 @@ fun FileTree(
             }
         }
     ) {
-        fileState.rootNode?.let { root ->
+        fileSlice.rootNode?.let { root ->
             item {
                 FileNodeView(
                     node = root,
-                    fileState = fileState,
-                    isDirty = { file -> dirtyFilesState.dirtyStates.find { it.file.absolutePath == file }?.isDirty ?: false },
+                    fileSlice = fileSlice,
+                    isDirty = { file -> dirtyFilesSlice.dirtyStates.find { it.file.absolutePath == file }?.isDirty ?: false },
                     selectedFile = selectedFile,
                     onFileSelect = onFileSelect,
                     onCreateFile = {
@@ -299,7 +296,7 @@ fun FileTree(
 @Composable
 fun FileNodeView(
     node: FileNode,
-    fileState: FileState,
+    fileSlice: FileSlice,
     isDirty: (path: String) -> Boolean,
     selectedFile: File?,
     onFileSelect: (File) -> Unit,
@@ -327,7 +324,7 @@ fun FileNodeView(
                 .clickable {
                     if (node.file.isDirectory) {
                         if (isSelected) {
-                            fileState.toggleNode(node)
+                            fileSlice.toggleNode(node)
                         } else {
                             onFileSelect(node.file)
                         }
@@ -392,7 +389,7 @@ fun FileNodeView(
             for (child in node.children) {
                 FileNodeView(
                     node = child,
-                    fileState = fileState,
+                    fileSlice = fileSlice,
                     isDirty = isDirty,
                     selectedFile = selectedFile,
                     onFileSelect = onFileSelect,

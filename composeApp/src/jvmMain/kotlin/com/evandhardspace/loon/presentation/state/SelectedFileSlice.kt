@@ -8,7 +8,7 @@ import androidx.compose.runtime.snapshots.Snapshot.Companion.withMutableSnapshot
 import kotlinx.coroutines.flow.Flow
 import java.io.File
 
-interface SelectedFileState : State {
+interface SelectedFileSlice : Slice {
     val selectedFileOrDirectory: File?
     val selectedFile: File?
     val selectedFileAsFlow: Flow<File?>
@@ -16,7 +16,7 @@ interface SelectedFileState : State {
     fun selectFile(file: File?)
 }
 
-internal class DefaultSelectedFileState : SelectedFileState {
+internal class DefaultSelectedFileSlice : SelectedFileSlice {
     override var selectedFileOrDirectory: File? by mutableStateOf(null)
         private set
 

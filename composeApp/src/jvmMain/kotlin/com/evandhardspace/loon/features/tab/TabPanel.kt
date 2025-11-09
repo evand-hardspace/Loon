@@ -25,9 +25,8 @@ import androidx.compose.ui.input.pointer.PointerIcon
 import androidx.compose.ui.input.pointer.onPointerEvent
 import androidx.compose.ui.input.pointer.pointerHoverIcon
 import androidx.compose.ui.unit.dp
-import com.evandhardspace.loon.presentation.state.DirtyFilesState
-import com.evandhardspace.loon.presentation.state.SelectedFileState
-import com.evandhardspace.loon.presentation.state.getState
+import com.evandhardspace.loon.presentation.state.DirtyFilesSlice
+import com.evandhardspace.loon.presentation.state.getSlice
 import org.jetbrains.skiko.Cursor
 import java.io.File
 
@@ -40,7 +39,7 @@ fun TabPanel(
     onTabClick: (File) -> Unit,
     onTabClosed: (File) -> Unit,
 ) {
-    val dirtyFilesState: DirtyFilesState = getState()
+    val dirtyFilesSlice: DirtyFilesSlice = getSlice()
 
     if (tabs.isEmpty()) {
         Spacer(Modifier.height(20.dp))
@@ -53,7 +52,7 @@ fun TabPanel(
             .filter { it.isFile }
             .forEach { file ->
                 val selected = file == selectedTab
-                val isDirty = dirtyFilesState.dirtyStates.find { it.file.absolutePath == file.absolutePath }?.isDirty ?: false
+                val isDirty = dirtyFilesSlice.dirtyStates.find { it.file.absolutePath == file.absolutePath }?.isDirty ?: false
                 var isHovered by remember { mutableStateOf(false) }
                 Column(
                     modifier = Modifier

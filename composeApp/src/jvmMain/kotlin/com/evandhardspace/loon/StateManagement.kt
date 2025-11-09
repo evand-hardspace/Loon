@@ -1,29 +1,29 @@
 package com.evandhardspace.loon
 
-import com.evandhardspace.loon.presentation.state.DefaultDirtyFilesState
-import com.evandhardspace.loon.presentation.state.DefaultFileState
-import com.evandhardspace.loon.presentation.state.DefaultSelectedFileState
-import com.evandhardspace.loon.presentation.state.DefaultTabsState
-import com.evandhardspace.loon.presentation.state.DirtyFilesState
-import com.evandhardspace.loon.presentation.state.FileState
-import com.evandhardspace.loon.presentation.state.SelectedFileState
-import com.evandhardspace.loon.presentation.state.TabsState
+import com.evandhardspace.loon.presentation.state.DefaultDirtyFilesSlice
+import com.evandhardspace.loon.presentation.state.DefaultFileSlice
+import com.evandhardspace.loon.presentation.state.DefaultSelectedFileSlice
+import com.evandhardspace.loon.presentation.state.DefaultTabsSlice
+import com.evandhardspace.loon.presentation.state.DirtyFilesSlice
+import com.evandhardspace.loon.presentation.state.FileSlice
+import com.evandhardspace.loon.presentation.state.SelectedFileSlice
+import com.evandhardspace.loon.presentation.state.TabsSlice
 import com.evandhardspace.loon.presentation.state.register
-import com.evandhardspace.loon.presentation.state.registerStates
+import com.evandhardspace.loon.presentation.state.registerSlice
 
 fun initStates() {
-    registerStates {
-        register<DirtyFilesState> {
-            DefaultDirtyFilesState()
+    registerSlice {
+        register<DirtyFilesSlice> {
+            DefaultDirtyFilesSlice()
         }
-        register<SelectedFileState> {
-            DefaultSelectedFileState()
+        register<SelectedFileSlice> {
+            DefaultSelectedFileSlice()
         }
-        register<TabsState> {
-            DefaultTabsState()
+        register<TabsSlice> {
+            DefaultTabsSlice()
         }
-        register<FileState> {
-            DefaultFileState()
+        register<FileSlice> {
+            DefaultFileSlice()
         }
     }
 }
