@@ -1,4 +1,4 @@
-package com.evandhardspace.loon.scene.editor
+package com.evandhardspace.loon.scene.workspace
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -15,7 +15,10 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -27,16 +30,19 @@ import com.evandhardspace.loon.features.workarea.WorkAreaViewModel
 import com.evandhardspace.loon.features.texteditorarea.TextEditorScreen
 import com.evandhardspace.loon.coreutils.ui.SplitPane
 import com.evandhardspace.loon.features.imagearea.ImageAreaHolder
+import com.evandhardspace.loon.features.tab.TabSelector
 import com.evandhardspace.loon.features.tab.TabViewModel
 import com.evandhardspace.loon.features.texteditorarea.TextEditorHolder
 import com.evandhardspace.loon.features.workarea.UnsupportedAreaHolder
+import com.evandhardspace.loon.keyhandler.AppKeyEvent
+import com.evandhardspace.loon.keyhandler.handleKeyEvent
 import com.evandhardspace.loon.presentation.state.SelectedFileSlice
 import com.evandhardspace.loon.presentation.state.clearSlices
 import com.evandhardspace.loon.presentation.state.getSlice
 import java.io.File
 
 @Composable
-fun EditorScene(
+fun WorkSpaceScene(
     selectedPath: String,
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
@@ -130,10 +136,18 @@ fun EditorScene(
                             color = MaterialTheme.colorScheme.onBackground,
                         )
                     }
+
                     else -> error("Not supported area holder")
                 }
             }
         }
+    )
+
+    TabSelector(
+        modifier = Modifier.fillMaxSize(),
+        tabs = tabViewModel.tabs,
+        selectedTabFile = tabViewModel.selectedTab,
+        onClose = selectedFileSlice::selectFile,
     )
 }
 

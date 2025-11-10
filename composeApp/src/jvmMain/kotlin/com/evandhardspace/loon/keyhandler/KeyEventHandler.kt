@@ -144,6 +144,7 @@ class KeyEventHandler {
     }
 
     fun onKeyEvent(event: KeyEvent): Boolean {
+        println("event: $event")
         return when (event.type) {
             KeyEventType.KeyDown if event.isMetaPressed && event.key == Key.N -> {
                 emit(AppKeyEvent.New(event.isShiftPressed))
@@ -165,6 +166,14 @@ class KeyEventHandler {
                 emit(AppKeyEvent.Save)
             }
 
+            KeyEventType.KeyDown if (event.isCtrlPressed) && event.key == Key.Tab -> {
+                emit(AppKeyEvent.TabMenu(event.isShiftPressed))
+            }
+
+            KeyEventType.KeyUp if (event.key == Key.CtrlLeft || event.key == Key.CtrlRight) -> {
+                emit(AppKeyEvent.ReleaseCtrl)
+            }
+
             else -> false
         }
     }
@@ -176,4 +185,6 @@ sealed interface AppKeyEvent {
     data object Close : AppKeyEvent
     data object Enter : AppKeyEvent
     data object Save : AppKeyEvent
+    data object ReleaseCtrl: AppKeyEvent
+    data class TabMenu(val isShiftPressed: Boolean): AppKeyEvent
 }

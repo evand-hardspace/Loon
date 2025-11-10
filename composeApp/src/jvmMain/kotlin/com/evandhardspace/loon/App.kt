@@ -8,7 +8,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
 import com.evandhardspace.loon.coreutils.ui.LoonTheme
-import com.evandhardspace.loon.scene.editor.EditorScene
+import com.evandhardspace.loon.scene.workspace.WorkSpaceScene
 import com.evandhardspace.loon.scene.filechooser.FileChooserScene
 
 @Composable
@@ -33,7 +33,7 @@ fun App(
                 )
             }
             composable<EditorRoute> {
-                EditorScene(
+                WorkSpaceScene(
                     modifier = Modifier.fillMaxSize(),
                     selectedPath = it.toRoute<EditorRoute>().selectedPath,
                     onBack = navController::popBackStack,
