@@ -5,8 +5,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.text.input.TextFieldValue
 import com.evandhardspace.loon.features.workarea.WorkAreaHolder
-import com.evandhardspace.loon.presentation.state.DirtyFilesSlice
-import com.evandhardspace.loon.presentation.state.getSlice
+import com.evandhardspace.loon.presentation.state.DirtyFilesState
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -14,7 +13,7 @@ import java.io.File
 
 class TextEditorHolder(
     val selectedFile: File,
-    private val dirtyFileSlice: DirtyFilesSlice = getSlice(),
+    private val dirtyFileState: DirtyFilesState,
 ) : WorkAreaHolder() {
 
     init {
@@ -25,7 +24,7 @@ class TextEditorHolder(
         coroutineScope.launch(Dispatchers.IO) {
             while (true) {
                 delay(1_000)
-                if ((dirtyFileSlice.dirtyStates.find { it.file == selectedFile }?.isDirty ?: false).not()) {
+                if ((dirtyFileState.dirtyStates.find { it.file == selectedFile }?.isDirty ?: false).not()) {
                     textState = textState.copy(text = selectedFile.readText())
                 }
             }
@@ -40,7 +39,7 @@ class TextEditorHolder(
         private set
 
     val isDirty: Boolean
-        get() = dirtyFileSlice.dirtyStates
+        get() = dirtyFileState.dirtyStates
             .find { it.file == selectedFile }
             ?.isDirty
             ?: false
@@ -48,12 +47,12 @@ class TextEditorHolder(
     private var initialSnapshot: String = textState.text
 
     override fun init() {
-        dirtyFileSlice.add(selectedFile)
+        dirtyFileState.add(selectedFile)
     }
 
     override fun dispose() {
         super.dispose()
-        dirtyFileSlice.remove(selectedFile.absolutePath)
+        dirtyFileState.remove(selectedFile.absolutePath)
     }
 
     fun updateText(newText: TextFieldValue) {
@@ -91,6 +90,6 @@ class TextEditorHolder(
     }
 
     private fun updateIsDirty(isDirty: Boolean) {
-        dirtyFileSlice.updateIsDirty(selectedFile.absolutePath, isDirty)
+        dirtyFileState.updateIsDirty(selectedFile.absolutePath, isDirty)
     }
 }

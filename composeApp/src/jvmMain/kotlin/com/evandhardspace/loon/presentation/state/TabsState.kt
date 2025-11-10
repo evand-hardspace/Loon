@@ -1,8 +1,11 @@
 package com.evandhardspace.loon.presentation.state
 
+import androidx.compose.runtime.ProvidableCompositionLocal
+import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.runtime.snapshots.SnapshotStateList
+import androidx.lifecycle.ViewModel
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
@@ -11,7 +14,7 @@ import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.launch
 import java.io.File
 
-interface TabsSlice : Slice {
+interface TabsState : State {
     val tabs: List<File>
     val tabsAsFlow: Flow<List<File>>
     val tabEvents: Flow<TabEvent>
@@ -21,7 +24,9 @@ interface TabsSlice : Slice {
     fun removeTab(file: File)
 }
 
-internal class DefaultTabsSlice : TabsSlice {
+val LocalTabsState: ProvidableCompositionLocal<TabsState> = compositionLocalOf { error("not provided") }
+
+internal class DefaultTabsState : TabsState, ViewModel() {
     private val scope = CoroutineScope(Dispatchers.Main.immediate)
 
     private val _tabs: SnapshotStateList<File> = mutableStateListOf()

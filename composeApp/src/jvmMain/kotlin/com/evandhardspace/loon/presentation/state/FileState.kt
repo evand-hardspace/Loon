@@ -1,13 +1,16 @@
 package com.evandhardspace.loon.presentation.state
 
 
+import androidx.compose.runtime.ProvidableCompositionLocal
+import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import androidx.lifecycle.ViewModel
 import java.io.File
 
-interface FileSlice : Slice {
+interface FileState : State {
     val rootNode: FileNode?
     fun initialize(root: File)
     fun createFile(relativeTo: File, name: String): File?
@@ -20,7 +23,9 @@ interface FileSlice : Slice {
     fun toggleNode(node: FileNode)
 }
 
-internal class DefaultFileSlice : FileSlice {
+val LocalFileState: ProvidableCompositionLocal<FileState> = compositionLocalOf { error("not provided") }
+
+internal class DefaultFileState : FileState, ViewModel() {
     override var rootNode: MutableFileNode? by mutableStateOf(null)
         private set
 

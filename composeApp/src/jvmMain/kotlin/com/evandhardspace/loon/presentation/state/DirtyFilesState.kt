@@ -1,13 +1,16 @@
 package com.evandhardspace.loon.presentation.state
 
+import androidx.compose.runtime.ProvidableCompositionLocal
+import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.mutableStateSetOf
 import androidx.compose.runtime.snapshots.Snapshot.Companion.withMutableSnapshot
 import androidx.compose.runtime.snapshots.SnapshotStateSet
+import androidx.lifecycle.ViewModel
 import java.io.File
 
-interface Slice
+interface State
 
-interface DirtyFilesSlice: Slice {
+interface DirtyFilesState: State {
     val dirtyStates: Set<DirtyState>
 
     fun updateIsDirty(
@@ -23,7 +26,9 @@ interface DirtyFilesSlice: Slice {
     fun remove(path: String)
 }
 
-internal class DefaultDirtyFilesSlice : DirtyFilesSlice {
+val LocalDirtyFilesState: ProvidableCompositionLocal<DirtyFilesState> = compositionLocalOf { error("not provided") }
+
+internal class DefaultDirtyFilesState : DirtyFilesState, ViewModel() {
 
     private val _dirtyStates: SnapshotStateSet<DirtyState> = mutableStateSetOf()
     override val dirtyStates: Set<DirtyState> get() = _dirtyStates

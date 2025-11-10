@@ -9,9 +9,6 @@ import com.evandhardspace.loon.keyhandler.KeyEventHandler
 import com.evandhardspace.loon.keyhandler.LocalKeyEventHandler
 
 fun main() = application {
-    LaunchedEffect(Unit) {
-        registerSlices() // TODO manage lifecycle
-    }
     val keyEventHandler = remember { KeyEventHandler() }
     CompositionLocalProvider(
         LocalKeyEventHandler provides keyEventHandler,
