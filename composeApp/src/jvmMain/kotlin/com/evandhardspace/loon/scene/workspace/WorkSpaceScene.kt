@@ -9,6 +9,10 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -65,8 +69,13 @@ fun WorkSpaceScene(
                 .background(MaterialTheme.colorScheme.background),
             leftContent = {
                 Column(modifier = Modifier.padding(start = 8.dp)) {
+                    var isOnBackEnabled by remember { mutableStateOf(true) }
                     IconButton(
-                        onClick = onBack,
+                        onClick = {
+                            isOnBackEnabled = false
+                            onBack()
+                        },
+                        enabled = isOnBackEnabled,
                         modifier = Modifier
                             .padding(4.dp)
                             .size(20.dp),
