@@ -1,11 +1,17 @@
 package com.evandhardspace.loon.features.filetree
 
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import com.evandhardspace.loon.presentation.state.DirtyFilesState
 import com.evandhardspace.loon.presentation.state.FileNode
 import com.evandhardspace.loon.presentation.state.FileTreeState
 import com.evandhardspace.loon.presentation.state.SelectedFileState
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.launch
 import java.io.File
+import java.nio.file.FileSystems
+import java.nio.file.StandardWatchEventKinds
 
 class FileTreeViewModel(
     private val selectedFileState: SelectedFileState,
@@ -14,6 +20,7 @@ class FileTreeViewModel(
 ) : ViewModel() {
 
     private lateinit var root: File
+    private var job: Job? = null
 
     val rootNode: FileNode?
         get() = fileTreeState.rootNode
@@ -21,6 +28,23 @@ class FileTreeViewModel(
     fun initialize(root: File) {
         this.root = root
         fileTreeState.initialize(root)
+        val watchService = FileSystems.getDefault().newWatchService()
+        root.toPath().register(
+            watchService,
+            StandardWatchEventKinds.ENTRY_CREATE,
+            StandardWatchEventKinds.ENTRY_DELETE,
+            StandardWatchEventKinds.ENTRY_MODIFY
+        ) // todo: move to presentation layer
+
+        job?.cancel()
+        job = viewModelScope.launch(Dispatchers.IO) {
+                while (true) {
+                    val key = watchService.take()
+                    key.pollEvents()
+                    key.reset()
+                    refreshRootNode()
+                }
+        }
     }
 
     fun refreshRootNode() {

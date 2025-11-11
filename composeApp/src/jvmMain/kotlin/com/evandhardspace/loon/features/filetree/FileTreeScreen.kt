@@ -60,26 +60,6 @@ fun FileTree(
         fileTreeViewModel.initialize(root)
     }
 
-    // Watch for external changes
-    LaunchedEffect(root) {
-        val watchService = FileSystems.getDefault().newWatchService()
-        root.toPath().register(
-            watchService,
-            StandardWatchEventKinds.ENTRY_CREATE,
-            StandardWatchEventKinds.ENTRY_DELETE,
-            StandardWatchEventKinds.ENTRY_MODIFY
-        ) // todo: move to presentation layer
-
-        withContext(Dispatchers.IO) {
-            while (true) {
-                val key = watchService.take()
-                key.pollEvents()
-                key.reset()
-                fileTreeViewModel.refreshRootNode()
-            }
-        }
-    }
-
     val selectedFile = fileTreeViewModel.selectedFileOrDirectory
     val targetDir = showNameDialogFile?.takeIf { it.isDirectory }
         ?: showNameDialogFile?.parentFile
