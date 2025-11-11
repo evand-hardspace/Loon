@@ -1,28 +1,10 @@
 package com.evandhardspace.loon.features.filetree
 
-import androidx.compose.foundation.ContextMenuArea
-import androidx.compose.foundation.ContextMenuItem
-import androidx.compose.foundation.ExperimentalFoundationApi
-import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.horizontalScroll
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.BoxWithConstraints
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.*
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material3.Icon
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.material.icons.automirrored.filled.InsertDriveFile
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Folder
@@ -30,14 +12,13 @@ import androidx.compose.material.icons.filled.FolderOpen
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
@@ -49,28 +30,26 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.coerceAtLeast
 import androidx.compose.ui.unit.dp
 import com.evandhardspace.loon.dialog.AppDialog
+import com.evandhardspace.loon.features.tab.TabViewModel
 import com.evandhardspace.loon.keyhandler.AppKeyEvent
 import com.evandhardspace.loon.keyhandler.handleKeyEvent
-import com.evandhardspace.loon.presentation.state.CreateType
-import com.evandhardspace.loon.presentation.state.DirtyFilesState
-import com.evandhardspace.loon.presentation.state.FileNode
-import com.evandhardspace.loon.presentation.state.FileState
-import com.evandhardspace.loon.presentation.state.LocalDirtyFilesState
-import com.evandhardspace.loon.presentation.state.LocalFileState
-import com.evandhardspace.loon.presentation.state.LocalSelectedFileState
-import com.evandhardspace.loon.presentation.state.SelectedFileState
+import com.evandhardspace.loon.presentation.state.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.File
 import java.nio.file.FileSystems
 import java.nio.file.StandardWatchEventKinds
+import kotlin.text.Typography
+import kotlin.text.ifEmpty
+import kotlin.text.isBlank
+import kotlin.text.isNotBlank
 
 @Composable
 fun FileTree(
     root: File,
+    fileTreeViewModel: FileTreeViewModel,
+    tabViewModel: TabViewModel,
     modifier: Modifier = Modifier,
-    onDeleteFile: (File) -> Unit,
-    onFileSelect: (File) -> Unit,
 ) {
     var showNameDialogFile: File? by remember { mutableStateOf(null) }
     var showDeleteDialogFile: File? by remember { mutableStateOf(null) }
@@ -78,11 +57,9 @@ fun FileTree(
     var newFileName by remember { mutableStateOf("") }
 
     val fileState: FileState = LocalFileState.current
-    val dirtyFilesState: DirtyFilesState = LocalDirtyFilesState.current
-    val selectedFileState: SelectedFileState = LocalSelectedFileState.current
 
     LaunchedEffect(root) {
-        fileState.initialize(root)
+        fileTreeViewModel.initialize(root)
     }
 
     // Watch for external changes
@@ -100,12 +77,12 @@ fun FileTree(
                 val key = watchService.take()
                 key.pollEvents()
                 key.reset()
-                fileState.rootNode?.let { fileState.refreshNode(it) }
+                fileTreeViewModel.refreshRootNode()
             }
         }
     }
 
-    val selectedFile = selectedFileState.selectedFileOrDirectory
+    val selectedFile = fileTreeViewModel.selectedFileOrDirectory
     val targetDir = showNameDialogFile?.takeIf { it.isDirectory }
         ?: showNameDialogFile?.parentFile
         ?: root
@@ -125,7 +102,7 @@ fun FileTree(
     }
 
     handleKeyEvent<AppKeyEvent.Remove>("filetree") {
-        showDeleteDialogFile = selectedFileState.selectedFileOrDirectory
+        showDeleteDialogFile = fileTreeViewModel.selectedFileOrDirectory
         true
     }
 
@@ -215,7 +192,7 @@ fun FileTree(
         val deleteFileDialogClick = {
             fileState.findNode(file)?.let { node ->
                 fileState.deleteNode(node)
-                onDeleteFile(file)
+                tabViewModel.onTabClosed(file)
             }
             showDeleteDialogFile = null
         }
@@ -293,11 +270,12 @@ fun FileTree(
                         FileNodeView(
                             node = root,
                             fileState = fileState,
-                            isDirty = { file ->
-                                dirtyFilesState.dirtyStates.find { it.file.absolutePath == file }?.isDirty ?: false
-                            },
+                            isDirty = fileTreeViewModel::isFileDirty,
                             selectedFile = selectedFile,
-                            onFileSelect = onFileSelect,
+                            onFileSelect = {
+                                tabViewModel.addTab(it)
+                                fileTreeViewModel.selectFile(it)
+                            },
                             level = 0,
                             onCreateFile = { file ->
                                 createType = CreateType.FILE

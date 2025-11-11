@@ -1,7 +1,5 @@
 package com.evandhardspace.loon.presentation.state
 
-import androidx.compose.runtime.ProvidableCompositionLocal
-import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -18,8 +16,6 @@ interface SelectedFileState : State {
 
     fun selectFile(file: File?)
 }
-
-val LocalSelectedFileState: ProvidableCompositionLocal<SelectedFileState> = compositionLocalOf { error("not provided") }
 
 internal class DefaultSelectedFileState : SelectedFileState, ViewModel() {
     override var selectedFileOrDirectory: File? by mutableStateOf(null)

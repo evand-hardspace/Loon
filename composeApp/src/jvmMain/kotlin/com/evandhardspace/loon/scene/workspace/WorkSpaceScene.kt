@@ -1,12 +1,7 @@
 package com.evandhardspace.loon.scene.workspace
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxHeight
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.*
 import androidx.compose.material.Icon
 import androidx.compose.material.IconButton
 import androidx.compose.material.Text
@@ -14,34 +9,24 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.viewmodel.compose.viewModel
+import com.evandhardspace.loon.coreutils.ui.SplitPane
 import com.evandhardspace.loon.features.filetree.FileTree
+import com.evandhardspace.loon.features.filetree.FileTreeViewModel
+import com.evandhardspace.loon.features.imagearea.ImageAreaHolder
 import com.evandhardspace.loon.features.imagearea.ImageViewScreen
 import com.evandhardspace.loon.features.tab.TabPanel
-import com.evandhardspace.loon.features.workarea.WorkAreaViewModel
-import com.evandhardspace.loon.features.texteditorarea.TextEditorScreen
-import com.evandhardspace.loon.coreutils.ui.SplitPane
-import com.evandhardspace.loon.features.imagearea.ImageAreaHolder
 import com.evandhardspace.loon.features.tab.TabSelector
 import com.evandhardspace.loon.features.tab.TabViewModel
 import com.evandhardspace.loon.features.texteditorarea.TextEditorHolder
+import com.evandhardspace.loon.features.texteditorarea.TextEditorScreen
 import com.evandhardspace.loon.features.workarea.UnsupportedAreaHolder
-import com.evandhardspace.loon.presentation.state.DefaultDirtyFilesState
-import com.evandhardspace.loon.presentation.state.DefaultFileState
-import com.evandhardspace.loon.presentation.state.DefaultSelectedFileState
-import com.evandhardspace.loon.presentation.state.DefaultTabsState
-import com.evandhardspace.loon.presentation.state.DirtyFilesState
-import com.evandhardspace.loon.presentation.state.FileState
-import com.evandhardspace.loon.presentation.state.LocalDirtyFilesState
-import com.evandhardspace.loon.presentation.state.LocalFileState
-import com.evandhardspace.loon.presentation.state.LocalSelectedFileState
-import com.evandhardspace.loon.presentation.state.LocalTabsState
-import com.evandhardspace.loon.presentation.state.SelectedFileState
-import com.evandhardspace.loon.presentation.state.TabsState
+import com.evandhardspace.loon.features.workarea.WorkAreaViewModel
+import com.evandhardspace.loon.presentation.state.ProvideStates
+import com.evandhardspace.loon.presentation.state.get
+import com.evandhardspace.loon.presentation.state.viewModelWithState
 import java.io.File
 
 @Composable
@@ -50,33 +35,27 @@ fun WorkSpaceScene(
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val dirtyFilesState: DirtyFilesState = viewModel { DefaultDirtyFilesState() }
-    val selectedFileState: SelectedFileState = viewModel { DefaultSelectedFileState() }
-    val tabsState: TabsState = viewModel { DefaultTabsState() }
-    val fileState: FileState = viewModel { DefaultFileState() }
 
-    CompositionLocalProvider(
-        LocalDirtyFilesState provides dirtyFilesState,
-        LocalSelectedFileState provides selectedFileState,
-        LocalTabsState provides tabsState,
-        LocalFileState provides fileState,
-    ) {
-
-        val selectedFileState = LocalSelectedFileState.current
-        val tabsState = LocalTabsState.current
-        val dirtyFileState = LocalDirtyFilesState.current
-
-        val tabViewModel: TabViewModel = viewModel {
-            TabViewModel(
-                selectedFileState = selectedFileState,
-                tabsState = tabsState,
+    ProvideStates {
+        val fileTreeViewModel = viewModelWithState {
+            FileTreeViewModel(
+                selectedFileState = get(),
+                dirtyFilesState = get(),
+                fileState = get(),
             )
         }
-        val workAreaViewModel: WorkAreaViewModel = viewModel {
+
+        val tabViewModel: TabViewModel = viewModelWithState {
+            TabViewModel(
+                selectedFileState = get(),
+                tabsState = get(),
+            )
+        }
+        val workAreaViewModel: WorkAreaViewModel = viewModelWithState {
             WorkAreaViewModel(
-                selectedFileState = selectedFileState,
-                dirtyFileState = dirtyFileState,
-                tabsState = tabsState,
+                selectedFileState = get(),
+                dirtyFileState = get(),
+                tabsState = get(),
             )
         }
 
@@ -100,15 +79,8 @@ fun WorkSpaceScene(
                     }
                     FileTree(
                         root = File(selectedPath),
-                        onFileSelect = {
-                            selectedFileState.selectFile(it)
-                            if (it.isDirectory.not()) {
-                                tabViewModel.addTab(it)
-                            }
-                        },
-                        onDeleteFile = {
-                            tabViewModel.onTabClosed(it)
-                        },
+                        fileTreeViewModel = fileTreeViewModel,
+                        tabViewModel = tabViewModel,
                         modifier = Modifier.fillMaxHeight(),
                     )
                 }
@@ -123,7 +95,7 @@ fun WorkSpaceScene(
                         },
                         onTabClick = { file ->
                             tabViewModel.addTab(file)
-                            selectedFileState.selectFile(file)
+                            fileTreeViewModel.selectFile(file)
                         },
                     )
                     when (val holder = workAreaViewModel.currentHolder) {
@@ -171,7 +143,7 @@ fun WorkSpaceScene(
             modifier = Modifier.fillMaxSize(),
             tabs = tabViewModel.tabs,
             selectedTabFile = tabViewModel.selectedTab,
-            onClose = selectedFileState::selectFile,
+            onClose = fileTreeViewModel::selectFile,
         )
     }
 }

@@ -1,8 +1,6 @@
 package com.evandhardspace.loon.presentation.state
 
 
-import androidx.compose.runtime.ProvidableCompositionLocal
-import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
@@ -22,8 +20,6 @@ interface FileState : State {
     fun collapseNode(node: FileNode)
     fun toggleNode(node: FileNode)
 }
-
-val LocalFileState: ProvidableCompositionLocal<FileState> = compositionLocalOf { error("not provided") }
 
 internal class DefaultFileState : FileState, ViewModel() {
     override var rootNode: MutableFileNode? by mutableStateOf(null)

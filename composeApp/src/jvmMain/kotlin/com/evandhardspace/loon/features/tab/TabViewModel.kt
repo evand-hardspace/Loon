@@ -16,6 +16,7 @@ class TabViewModel(
         get() = selectedFileState.selectedFile
 
     fun addTab(file: File) {
+        if(file.isDirectory) return
         selectedFileState.selectFile(file)
         if (file in tabs) return
         tabsState.addTab(file)

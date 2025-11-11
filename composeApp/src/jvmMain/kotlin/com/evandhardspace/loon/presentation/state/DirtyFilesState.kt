@@ -1,7 +1,5 @@
 package com.evandhardspace.loon.presentation.state
 
-import androidx.compose.runtime.ProvidableCompositionLocal
-import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.mutableStateSetOf
 import androidx.compose.runtime.snapshots.Snapshot.Companion.withMutableSnapshot
 import androidx.compose.runtime.snapshots.SnapshotStateSet
@@ -25,8 +23,6 @@ interface DirtyFilesState: State {
 
     fun remove(path: String)
 }
-
-val LocalDirtyFilesState: ProvidableCompositionLocal<DirtyFilesState> = compositionLocalOf { error("not provided") }
 
 internal class DefaultDirtyFilesState : DirtyFilesState, ViewModel() {
 

@@ -1,7 +1,5 @@
 package com.evandhardspace.loon.presentation.state
 
-import androidx.compose.runtime.ProvidableCompositionLocal
-import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.runtime.snapshots.SnapshotStateList
@@ -23,8 +21,6 @@ interface TabsState : State {
 
     fun removeTab(file: File)
 }
-
-val LocalTabsState: ProvidableCompositionLocal<TabsState> = compositionLocalOf { error("not provided") }
 
 internal class DefaultTabsState : TabsState, ViewModel() {
     private val scope = CoroutineScope(Dispatchers.Main.immediate)
