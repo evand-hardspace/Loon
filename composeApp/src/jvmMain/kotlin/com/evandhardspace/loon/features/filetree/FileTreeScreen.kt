@@ -169,7 +169,6 @@ fun FileTree(
     showDeleteDialogFile?.let { file ->
         val deleteFileDialogClick = {
             fileTreeViewModel.deleteFile(file)
-            tabViewModel.onTabClosed(file)
             showDeleteDialogFile = null
         }
         AppDialog(

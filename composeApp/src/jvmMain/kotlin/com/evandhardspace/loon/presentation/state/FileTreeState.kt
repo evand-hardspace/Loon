@@ -6,13 +6,19 @@ import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.coroutines.launch
 import java.io.File
 
 interface FileTreeState : State {
     val rootNode: FileNode?
+    val deletedFile: Flow<File>
     fun initialize(root: File)
     fun addNode(relativeTo: File, newFile: File, name: String)
-    fun deleteNode(file: File)
+    fun deleteFile(file: File)
     fun refreshNode(node: FileNode)
     fun findNode(file: File): MutableFileNode?
     fun expandNode(node: FileNode)
@@ -23,6 +29,9 @@ interface FileTreeState : State {
 internal class DefaultFileTreeState : FileTreeState, ViewModel() {
     override var rootNode: MutableFileNode? by mutableStateOf(null)
         private set
+
+    private val _deletedFile = MutableSharedFlow<File>()
+    override val deletedFile: Flow<File> = _deletedFile.asSharedFlow()
 
     override fun initialize(root: File) {
         rootNode = buildFileNode(root, isExpanded = true)
@@ -57,11 +66,14 @@ internal class DefaultFileTreeState : FileTreeState, ViewModel() {
         }
     }
 
-    override fun deleteNode(file: File) {
+    override fun deleteFile(file: File) {
         val root = rootNode ?: return
         if (file == root.file) return
 
         findParentNode(root, file)?.removeChild(file)
+        viewModelScope.launch {
+            _deletedFile.emit(file)
+        }
     }
 
     override fun refreshNode(node: FileNode) {

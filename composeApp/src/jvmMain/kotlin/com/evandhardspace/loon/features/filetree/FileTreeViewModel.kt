@@ -47,7 +47,7 @@ class FileTreeViewModel(
         }
     }
 
-    fun refreshRootNode() {
+    private fun refreshRootNode() {
         fileTreeState.rootNode?.let { fileTreeState.refreshNode(it) }
     }
 
@@ -69,7 +69,7 @@ class FileTreeViewModel(
         val success = deleteFileOrDirectory(root, target)
 
         if(success) {
-            fileTreeState.deleteNode(target)
+            fileTreeState.deleteFile(target)
         }
 
         return success

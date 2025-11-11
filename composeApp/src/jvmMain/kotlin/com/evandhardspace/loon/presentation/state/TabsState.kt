@@ -14,37 +14,29 @@ import java.io.File
 
 interface TabsState : State {
     val tabs: List<File>
-    val tabsAsFlow: Flow<List<File>>
     val tabEvents: Flow<TabEvent>
 
-    fun addTab(file: File)
+    suspend fun addTab(file: File)
 
-    fun removeTab(file: File)
+    suspend fun removeTab(file: File)
 }
 
 internal class DefaultTabsState : TabsState, ViewModel() {
-    private val scope = CoroutineScope(Dispatchers.Main.immediate)
 
     private val _tabs: SnapshotStateList<File> = mutableStateListOf()
     override val tabs: List<File> = _tabs
 
-    override val tabsAsFlow: Flow<List<File>> = snapshotFlow { _tabs.toList() }
-
     private val _tabEvents = MutableSharedFlow<TabEvent>()
     override val tabEvents: Flow<TabEvent> = _tabEvents.asSharedFlow()
 
-    override fun addTab(file: File) {
-        scope.launch {
-            _tabs.add(file)
-            _tabEvents.emit(TabEvent.AddedTab(file))
-        }
+    override suspend fun addTab(file: File) {
+        _tabs.add(file)
+        _tabEvents.emit(TabEvent.AddedTab(file))
     }
 
-    override fun removeTab(file: File) {
-        scope.launch {
-            _tabs.remove(file)
-            _tabEvents.emit(TabEvent.RemovedTab(file))
-        }
+    override suspend fun removeTab(file: File) {
+        _tabs.remove(file)
+        _tabEvents.emit(TabEvent.RemovedTab(file))
     }
 }
 

@@ -49,6 +49,7 @@ fun WorkSpaceScene(
             TabViewModel(
                 selectedFileState = get(),
                 tabsState = get(),
+                fileTreeState = get(),
             )
         }
         val workAreaViewModel: WorkAreaViewModel = viewModelWithState {
