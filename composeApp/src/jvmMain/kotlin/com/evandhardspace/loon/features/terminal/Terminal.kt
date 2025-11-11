@@ -66,7 +66,7 @@ fun Terminal(
     val horizontalScrollState = rememberScrollState()
     val focusRequester = remember { FocusRequester() }
 
-    handleKeyEvent<AppKeyEvent.TabMenu>("terminal") {
+    handleKeyEvent<AppKeyEvent.ToggleTerminal>("terminal") {
         isExpanded = !isExpanded
         onToggleVisibility(isExpanded)
         true
