@@ -170,6 +170,10 @@ class KeyEventHandler {
                 emit(AppKeyEvent.TabMenu(event.isShiftPressed))
             }
 
+            KeyEventType.KeyDown if (event.isMetaPressed) && event.key == Key.T -> {
+                emit(AppKeyEvent.ToggleTerminal)
+            }
+
             KeyEventType.KeyUp if (event.key == Key.CtrlLeft || event.key == Key.CtrlRight) -> {
                 emit(AppKeyEvent.ReleaseCtrl)
             }
@@ -186,5 +190,6 @@ sealed interface AppKeyEvent {
     data object Enter : AppKeyEvent
     data object Save : AppKeyEvent
     data object ReleaseCtrl: AppKeyEvent
+    data object ToggleTerminal: AppKeyEvent
     data class TabMenu(val isShiftPressed: Boolean): AppKeyEvent
 }

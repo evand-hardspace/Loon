@@ -40,9 +40,13 @@ class WorkAreaViewModel(
     }
 
     private fun addHolder(file: File) {
-        val holder = workHolderFactory.create(file)
-        holder.init()
-        holders[file.absolutePath] = holder
+        try {
+            val holder = workHolderFactory.create(file)
+            holder.init()
+            holders[file.absolutePath] = holder
+        } catch (e: Throwable) {
+            println(e)
+        }
     }
 
     private fun removeHolder(filePath: String) {

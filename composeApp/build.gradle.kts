@@ -34,6 +34,7 @@ kotlin {
         }
         jvmMain.dependencies {
             implementation(compose.desktop.currentOs)
+            implementation(libs.pty4j)
             implementation(libs.kotlinx.coroutinesSwing)
         }
     }

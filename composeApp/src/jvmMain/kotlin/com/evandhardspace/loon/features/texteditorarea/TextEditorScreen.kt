@@ -45,6 +45,24 @@ fun TextEditorScreen(
     )
 }
 
+// TODO refactor
+@Composable
+fun KotlinTextEditorScreen(
+    holder: KotlinTextEditorHolder,
+    modifier: Modifier = Modifier,
+) {
+    TextEditorContent(
+        isDirty = holder.isDirty,
+        save = holder::save,
+        textState = holder.textState,
+        getCharCount = holder::getCharCount,
+        getWordCount = holder::getWordCount,
+        getLineCount = holder::getLineCount,
+        updateText = holder::updateText,
+        modifier = modifier,
+    )
+}
+
 @Composable
 fun TextEditorContent(
     isDirty: Boolean,
@@ -151,7 +169,6 @@ fun TextEditorContent(
                     }
                 )
 
-                // Vertical scrollbar
                 VerticalScrollbar(
                     modifier = Modifier
                         .align(Alignment.CenterEnd)
@@ -164,7 +181,6 @@ fun TextEditorContent(
                     ),
                 )
 
-                // Horizontal scrollbar
                 HorizontalScrollbar(
                     modifier = Modifier
                         .align(Alignment.BottomStart)

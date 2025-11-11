@@ -24,6 +24,9 @@ import com.evandhardspace.loon.features.imagearea.ImageViewScreen
 import com.evandhardspace.loon.features.tab.TabPanel
 import com.evandhardspace.loon.features.tab.TabSelector
 import com.evandhardspace.loon.features.tab.TabViewModel
+import com.evandhardspace.loon.features.terminal.Terminal
+import com.evandhardspace.loon.features.texteditorarea.KotlinTextEditorHolder
+import com.evandhardspace.loon.features.texteditorarea.KotlinTextEditorScreen
 import com.evandhardspace.loon.features.texteditorarea.TextEditorHolder
 import com.evandhardspace.loon.features.texteditorarea.TextEditorScreen
 import com.evandhardspace.loon.features.workarea.UnsupportedAreaHolder
@@ -113,7 +116,9 @@ fun WorkSpaceScene(
                     when (val holder = workAreaViewModel.currentHolder) {
                         is ImageAreaHolder -> {
                             ImageViewScreen(
-                                modifier = Modifier.fillMaxSize(),
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .weight(1f),
                                 imageFile = holder.selectedFile,
                             )
                         }
@@ -121,12 +126,25 @@ fun WorkSpaceScene(
                         is TextEditorHolder -> {
                             TextEditorScreen(
                                 holder = holder,
-                                modifier = Modifier.weight(1f)
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .weight(1f),
+                            )
+                        }
+
+                        is KotlinTextEditorHolder -> {
+                            KotlinTextEditorScreen(
+                                holder = holder,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .weight(1f),
                             )
                         }
 
                         is UnsupportedAreaHolder -> Box(
-                            modifier = Modifier.fillMaxSize(),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .weight(1f),
                             contentAlignment = Alignment.Center,
                         ) {
                             Text(
@@ -136,7 +154,9 @@ fun WorkSpaceScene(
                         }
 
                         null -> Box(
-                            modifier = Modifier.fillMaxSize(),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .weight(1f),
                             contentAlignment = Alignment.Center,
                         ) {
                             Text(
@@ -147,6 +167,19 @@ fun WorkSpaceScene(
 
                         else -> error("Not supported area holder")
                     }
+
+                    var isExpanded by remember { mutableStateOf(false) }
+                    Terminal(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .then(
+                                if(isExpanded) {
+                                    Modifier.height(200.dp)
+                                } else Modifier.height(20.dp)
+                            ),
+                        startDirectory = selectedPath,
+                        onToggleVisibility = { isExpanded = it }
+                    )
                 }
             }
         )
