@@ -19,13 +19,13 @@ fun ProvideStates(
     val dirtyFilesState: DirtyFilesState = state { DefaultDirtyFilesState() }
     val selectedFileState: SelectedFileState = state { DefaultSelectedFileState() }
     val tabsState: TabsState = state { DefaultTabsState() }
-    val fileState: FileState = state { DefaultFileState() }
+    val fileTreeState: FileTreeState = state { DefaultFileTreeState() }
 
     CompositionLocalProvider(
         LocalDirtyFilesState provides dirtyFilesState,
         LocalSelectedFileState provides selectedFileState,
         LocalTabsState provides tabsState,
-        LocalFileState provides fileState,
+        LocalFileTreeState provides fileTreeState,
         content = content,
     )
 }

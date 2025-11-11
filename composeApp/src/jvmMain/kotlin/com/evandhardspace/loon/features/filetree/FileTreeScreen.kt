@@ -56,8 +56,6 @@ fun FileTree(
     var createType by remember { mutableStateOf(CreateType.FILE) }
     var newFileName by remember { mutableStateOf("") }
 
-    val fileState: FileState = LocalFileState.current
-
     LaunchedEffect(root) {
         fileTreeViewModel.initialize(root)
     }
@@ -109,9 +107,9 @@ fun FileTree(
     val newFileDialogClick = {
         if (newFileName.isNotBlank() && !fileExists) {
             if (createType == CreateType.FILE) {
-                fileState.createFile(showNameDialogFile ?: root, newFileName)
+                fileTreeViewModel.createFile(showNameDialogFile ?: root, newFileName)
             } else {
-                fileState.createFolder(showNameDialogFile ?: root, newFileName)
+                fileTreeViewModel.createFolder(showNameDialogFile ?: root, newFileName)
             }
             showNameDialogFile = null
             newFileName = ""
@@ -190,10 +188,8 @@ fun FileTree(
 
     showDeleteDialogFile?.let { file ->
         val deleteFileDialogClick = {
-            fileState.findNode(file)?.let { node ->
-                fileState.deleteNode(node)
-                tabViewModel.onTabClosed(file)
-            }
+            fileTreeViewModel.deleteFile(file)
+            tabViewModel.onTabClosed(file)
             showDeleteDialogFile = null
         }
         AppDialog(
@@ -265,11 +261,11 @@ fun FileTree(
                 )
                     .width(maxWidth.coerceAtLeast(200.dp))
             ) {
-                fileState.rootNode?.let { root ->
+                fileTreeViewModel.rootNode?.let { root ->
                     item {
                         FileNodeView(
                             node = root,
-                            fileState = fileState,
+                            toggleNode = fileTreeViewModel::onNodeClick,
                             isDirty = fileTreeViewModel::isFileDirty,
                             selectedFile = selectedFile,
                             onFileSelect = {
@@ -303,7 +299,7 @@ fun FileTree(
 @Composable
 fun FileNodeView(
     node: FileNode,
-    fileState: FileState,
+    toggleNode: (FileNode) -> Unit,
     isDirty: (path: String) -> Boolean,
     selectedFile: File?,
     onFileSelect: (File) -> Unit,
@@ -337,7 +333,7 @@ fun FileNodeView(
                 .clickable {
                     if (node.file.isDirectory) {
                         if (isSelected) {
-                            fileState.toggleNode(node)
+                            toggleNode(node)
                         } else {
                             onFileSelect(node.file)
                         }
@@ -393,7 +389,7 @@ fun FileNodeView(
             for (child in node.children) {
                 FileNodeView(
                     node = child,
-                    fileState = fileState,
+                    toggleNode= toggleNode,
                     isDirty = isDirty,
                     selectedFile = selectedFile,
                     onFileSelect = onFileSelect,

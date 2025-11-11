@@ -24,7 +24,7 @@ class TextEditorHolder(
         coroutineScope.launch(Dispatchers.IO) {
             while (true) {
                 delay(1_000)
-                if ((dirtyFileState.dirtyStates.find { it.file == selectedFile }?.isDirty ?: false).not()) {
+                if ((dirtyFileState.dirtyFiles.find { it.file == selectedFile }?.isDirty ?: false).not()) {
                     textState = textState.copy(text = selectedFile.readText())
                 }
             }
@@ -39,7 +39,7 @@ class TextEditorHolder(
         private set
 
     val isDirty: Boolean
-        get() = dirtyFileState.dirtyStates
+        get() = dirtyFileState.dirtyFiles
             .find { it.file == selectedFile }
             ?.isDirty
             ?: false

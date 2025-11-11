@@ -9,7 +9,7 @@ import java.io.File
 interface State
 
 interface DirtyFilesState: State {
-    val dirtyStates: Set<DirtyState>
+    val dirtyFiles: Set<DirtyFile>
 
     fun updateIsDirty(
         path: String,
@@ -26,8 +26,8 @@ interface DirtyFilesState: State {
 
 internal class DefaultDirtyFilesState : DirtyFilesState, ViewModel() {
 
-    private val _dirtyStates: SnapshotStateSet<DirtyState> = mutableStateSetOf()
-    override val dirtyStates: Set<DirtyState> get() = _dirtyStates
+    private val _dirtyFiles: SnapshotStateSet<DirtyFile> = mutableStateSetOf()
+    override val dirtyFiles: Set<DirtyFile> get() = _dirtyFiles
 
     override fun updateIsDirty(
         path: String,
@@ -40,10 +40,10 @@ internal class DefaultDirtyFilesState : DirtyFilesState, ViewModel() {
     ) {
         withMutableSnapshot {
             val path = file.absolutePath
-            val existing = _dirtyStates.find { it.file.absolutePath == path }
-            if (existing != null) _dirtyStates.remove(existing)
-            _dirtyStates.add(
-                DirtyState(
+            val existing = _dirtyFiles.find { it.file.absolutePath == path }
+            if (existing != null) _dirtyFiles.remove(existing)
+            _dirtyFiles.add(
+                DirtyFile(
                     file = file,
                     isDirty = isDirty,
                 )
@@ -53,30 +53,29 @@ internal class DefaultDirtyFilesState : DirtyFilesState, ViewModel() {
 
     override fun remove(path: String) {
         withMutableSnapshot {
-            _dirtyStates.find { it.file.absolutePath == path }?.let(_dirtyStates::remove)
+            _dirtyFiles.find { it.file.absolutePath == path }?.let(_dirtyFiles::remove)
         }
     }
 
     private fun update(
         path: String,
-        transform: (DirtyState) -> DirtyState,
+        transform: (DirtyFile) -> DirtyFile,
     ) {
         withMutableSnapshot {
-            _dirtyStates.find { it.file.absolutePath == path }?.let { old ->
-                _dirtyStates.remove(old)
-                _dirtyStates.add(transform(old))
+            _dirtyFiles.find { it.file.absolutePath == path }?.let { old ->
+                _dirtyFiles.remove(old)
+                _dirtyFiles.add(transform(old))
             }
         }
     }
 }
 
-data class DirtyState(
+data class DirtyFile(
     val file: File,
     val isDirty: Boolean,
 ) {
-    // Equality based only on path
     override fun equals(other: Any?) =
-        other is DirtyState && file.absolutePath == other.file.absolutePath
+        other is DirtyFile && file.absolutePath == other.file.absolutePath
 
     override fun hashCode(): Int = file.absolutePath.hashCode()
 }

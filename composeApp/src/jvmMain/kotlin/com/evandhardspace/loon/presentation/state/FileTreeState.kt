@@ -8,12 +8,11 @@ import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import java.io.File
 
-interface FileState : State {
+interface FileTreeState : State {
     val rootNode: FileNode?
     fun initialize(root: File)
-    fun createFile(relativeTo: File, name: String): File?
-    fun createFolder(relativeTo: File, name: String): File?
-    fun deleteNode(node: FileNode): Boolean
+    fun addNode(relativeTo: File, newFile: File, name: String)
+    fun deleteNode(file: File)
     fun refreshNode(node: FileNode)
     fun findNode(file: File): MutableFileNode?
     fun expandNode(node: FileNode)
@@ -21,7 +20,7 @@ interface FileState : State {
     fun toggleNode(node: FileNode)
 }
 
-internal class DefaultFileState : FileState, ViewModel() {
+internal class DefaultFileTreeState : FileTreeState, ViewModel() {
     override var rootNode: MutableFileNode? by mutableStateOf(null)
         private set
 
@@ -46,8 +45,7 @@ internal class DefaultFileState : FileState, ViewModel() {
         )
     }
 
-    override fun createFile(relativeTo: File, name: String): File {
-        val newFile = createFileRelativeTo(relativeTo, name)
+    override fun addNode(relativeTo: File, newFile: File, name: String) {
         findNode(relativeTo)?.let { parentNode ->
             val parent = if (parentNode.file.isDirectory) parentNode else findNode(
                 parentNode.file.parentFile ?: error("no parent file")
@@ -57,30 +55,13 @@ internal class DefaultFileState : FileState, ViewModel() {
                 it.addChild(newNode, sort = true)
             }
         }
-        return newFile
     }
 
-    override fun createFolder(relativeTo: File, name: String): File {
-        val newFolder = createFolderRelativeTo(relativeTo, name)
-        findNode(relativeTo)?.let { parentNode ->
-            val parent = if (parentNode.file.isDirectory) parentNode else findNode(parentNode.file.parentFile ?: error("No parent file"))
-            parent?.let {
-                val newNode = MutableFileNode(newFolder, isExpanded = false)
-                it.addChild(newNode)
-            }
-        }
-        return newFolder
-    }
+    override fun deleteNode(file: File) {
+        val root = rootNode ?: return
+        if (file == root.file) return
 
-    override fun deleteNode(node: FileNode): Boolean {
-        val root = rootNode ?: return false
-        if (node == root) return false
-
-        val success = deleteFileOrDirectory(root.file, node.file)
-        if (success) {
-            findParentNode(root, node.file)?.removeChild(node)
-        }
-        return success
+        findParentNode(root, file)?.removeChild(file)
     }
 
     override fun refreshNode(node: FileNode) {
@@ -95,7 +76,7 @@ internal class DefaultFileState : FileState, ViewModel() {
         // Remove deleted children
         currentChildren.forEach { child ->
             if (!child.file.exists()) {
-                node.removeChild(child)
+                node.removeChild(child.file)
             }
         }
 
@@ -183,8 +164,8 @@ class MutableFileNode(
         }
     }
 
-    fun removeChild(child: FileNode) {
-        _children.remove(child)
+    fun removeChild(child: File) {
+        _children.removeIf { it.file == child }
     }
 
     fun sortChildren() {
@@ -207,47 +188,4 @@ class MutableFileNode(
 
 enum class CreateType {
     FILE, FOLDER
-}
-
-fun createFileRelativeTo(selected: File, newFileName: String): File {
-    val targetDir = selected.takeIf { it.isDirectory }
-        ?: selected.parentFile
-        ?: error("Selected file has no parent")
-
-    val newFile = File(targetDir, newFileName)
-    if (!newFile.exists()) {
-        newFile.createNewFile()
-        println("Created: ${newFile.absolutePath}")
-    } else {
-        println("File already exists: ${newFile.absolutePath}")
-    }
-    return newFile
-}
-
-fun createFolderRelativeTo(selected: File, newFolderName: String): File {
-    val targetDir = selected.takeIf { it.isDirectory }
-        ?: selected.parentFile
-        ?: error("Selected file has no parent")
-
-    val newFolder = File(targetDir, newFolderName)
-    if (!newFolder.exists()) {
-        newFolder.mkdirs()
-        println("Created folder: ${newFolder.absolutePath}")
-    } else {
-        println("Folder already exists: ${newFolder.absolutePath}")
-    }
-    return newFolder
-}
-
-fun deleteFileOrDirectory(root: File, target: File): Boolean {
-    if (target == root) return false
-    return if (target.exists()) {
-        if (target.isDirectory) {
-            target.deleteRecursively()
-        } else {
-            target.delete()
-        }
-    } else {
-        false
-    }
 }

@@ -59,7 +59,7 @@ fun TabPanel(
             .filter { it.isFile }
             .forEach { file ->
                 val selected = file == selectedTab
-                val isDirty = dirtyFilesState.dirtyStates.find { it.file.absolutePath == file.absolutePath }?.isDirty ?: false
+                val isDirty = dirtyFilesState.dirtyFiles.find { it.file.absolutePath == file.absolutePath }?.isDirty ?: false
                 var isHovered by remember { mutableStateOf(false) }
                 Column(
                     modifier = Modifier

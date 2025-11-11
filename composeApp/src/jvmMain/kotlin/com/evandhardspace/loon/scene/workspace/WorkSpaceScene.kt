@@ -41,7 +41,7 @@ fun WorkSpaceScene(
             FileTreeViewModel(
                 selectedFileState = get(),
                 dirtyFilesState = get(),
-                fileState = get(),
+                fileTreeState = get(),
             )
         }
 
