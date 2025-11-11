@@ -82,8 +82,7 @@ class FileTreeViewModel(
     val selectedFileOrDirectory: File?
         get() = selectedFileState.selectedFileOrDirectory
 
-    fun isFileDirty(file: String): Boolean =
-        dirtyFilesState.dirtyFiles.find { it.file.absolutePath == file }?.isDirty ?: false
+    fun isFileDirty(file: String): Boolean = dirtyFilesState.isFileDirty(file)
 
 }
 

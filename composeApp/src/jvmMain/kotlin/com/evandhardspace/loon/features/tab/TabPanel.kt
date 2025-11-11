@@ -37,11 +37,11 @@ import java.io.File
 fun TabPanel(
     modifier: Modifier = Modifier,
     tabs: List<File>,
+    isDirty: (File) -> Boolean,
     selectedTab: File?,
     onTabClick: (File) -> Unit,
     onTabClosed: (File) -> Unit,
 ) {
-    val dirtyFilesState: DirtyFilesState = LocalDirtyFilesState.current
 
     handleKeyEvent<AppKeyEvent.Close>("tab") {
         selectedTab?.let { onTabClosed(it) }
@@ -59,7 +59,7 @@ fun TabPanel(
             .filter { it.isFile }
             .forEach { file ->
                 val selected = file == selectedTab
-                val isDirty = dirtyFilesState.dirtyFiles.find { it.file.absolutePath == file.absolutePath }?.isDirty ?: false
+                val isDirty = isDirty(file)
                 var isHovered by remember { mutableStateOf(false) }
                 Column(
                     modifier = Modifier

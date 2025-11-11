@@ -54,6 +54,7 @@ fun WorkSpaceScene(
                 selectedFileState = get(),
                 tabsState = get(),
                 fileTreeState = get(),
+                dirtyFilesState = get(),
             )
         }
         val workAreaViewModel: WorkAreaViewModel = viewModelWithState {
@@ -103,6 +104,7 @@ fun WorkSpaceScene(
                         onTabClosed = { file ->
                             tabViewModel.onTabClosed(file)
                         },
+                        isDirty = tabViewModel::isTabDirty,
                         onTabClick = { file ->
                             tabViewModel.addTab(file)
                             fileTreeViewModel.selectFile(file)

@@ -8,8 +8,10 @@ import java.io.File
 
 interface State
 
-interface DirtyFilesState: State {
+interface DirtyFilesState : State {
     val dirtyFiles: Set<DirtyFile>
+
+    fun isFileDirty(file: String): Boolean
 
     fun updateIsDirty(
         path: String,
@@ -50,6 +52,10 @@ internal class DefaultDirtyFilesState : DirtyFilesState, ViewModel() {
             )
         }
     }
+
+    override fun isFileDirty(file: String): Boolean =
+        dirtyFiles.find { it.file.absolutePath == file }?.isDirty ?: false
+
 
     override fun remove(path: String) {
         withMutableSnapshot {

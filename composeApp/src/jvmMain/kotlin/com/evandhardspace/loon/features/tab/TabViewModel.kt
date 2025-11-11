@@ -2,6 +2,7 @@ package com.evandhardspace.loon.features.tab
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.evandhardspace.loon.presentation.state.DirtyFilesState
 import com.evandhardspace.loon.presentation.state.FileTreeState
 import com.evandhardspace.loon.presentation.state.SelectedFileState
 import com.evandhardspace.loon.presentation.state.TabsState
@@ -13,6 +14,7 @@ import java.io.File
 class TabViewModel(
     private val selectedFileState: SelectedFileState,
     private val tabsState: TabsState,
+    private val dirtyFilesState: DirtyFilesState,
     fileTreeState: FileTreeState,
 ) : ViewModel() {
 
@@ -49,4 +51,7 @@ class TabViewModel(
             )
         }
     }
+
+    fun isTabDirty(tab: File): Boolean =
+        dirtyFilesState.isFileDirty(tab.absolutePath)
 }
