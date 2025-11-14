@@ -16,6 +16,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.evandhardspace.loon.coreutils.ui.SplitPane
 import com.evandhardspace.loon.features.filetree.FileTree
 import com.evandhardspace.loon.features.filetree.FileTreeViewModel
@@ -29,6 +30,8 @@ import com.evandhardspace.loon.features.texteditorarea.KotlinTextEditorHolder
 import com.evandhardspace.loon.features.texteditorarea.KotlinTextEditorScreen
 import com.evandhardspace.loon.features.texteditorarea.TextEditorHolder
 import com.evandhardspace.loon.features.texteditorarea.TextEditorScreen
+import com.evandhardspace.loon.features.vcs.GitRepository
+import com.evandhardspace.loon.features.vcs.GitWatcher
 import com.evandhardspace.loon.features.workarea.UnsupportedAreaHolder
 import com.evandhardspace.loon.features.workarea.WorkAreaViewModel
 import com.evandhardspace.loon.presentation.state.ProvideStates
@@ -45,10 +48,14 @@ fun WorkSpaceScene(
 
     ProvideStates {
         val fileTreeViewModel = viewModelWithState {
+            val gitRepo = GitRepository(selectedPath)
+            val gitWatcher = GitWatcher(gitRepo, selectedPath)
             FileTreeViewModel(
                 selectedFileState = get(),
                 dirtyFilesState = get(),
                 fileTreeState = get(),
+                gitRepository = gitRepo,
+                gitWatcher = gitWatcher,
             )
         }
 
@@ -104,6 +111,8 @@ fun WorkSpaceScene(
                     TabPanel(
                         tabs = tabViewModel.tabs,
                         selectedTab = tabViewModel.selectedTab,
+                        root = selectedPath,
+                        gitStatus = fileTreeViewModel.gitStatus.collectAsStateWithLifecycle().value,
                         onTabClosed = { file ->
                             tabViewModel.onTabClosed(file)
                         },

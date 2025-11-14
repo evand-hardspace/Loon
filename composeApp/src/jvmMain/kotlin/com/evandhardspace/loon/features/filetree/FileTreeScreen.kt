@@ -24,21 +24,20 @@ import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.PointerEventType
 import androidx.compose.ui.input.pointer.onPointerEvent
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.coerceAtLeast
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.evandhardspace.loon.dialog.AppDialog
 import com.evandhardspace.loon.features.tab.TabViewModel
+import com.evandhardspace.loon.features.vcs.GitFileStatus
 import com.evandhardspace.loon.keyhandler.AppKeyEvent
 import com.evandhardspace.loon.keyhandler.handleKeyEvent
 import com.evandhardspace.loon.presentation.state.*
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
 import java.io.File
-import java.nio.file.FileSystems
-import java.nio.file.StandardWatchEventKinds
 import kotlin.text.Typography
 import kotlin.text.ifEmpty
 import kotlin.text.isBlank
@@ -59,6 +58,8 @@ fun FileTree(
     LaunchedEffect(root) {
         fileTreeViewModel.initialize(root)
     }
+
+    val gitStatus by fileTreeViewModel.gitStatus.collectAsStateWithLifecycle()
 
     val selectedFile = fileTreeViewModel.selectedFileOrDirectory
     val targetDir = showNameDialogFile?.takeIf { it.isDirectory }
@@ -244,6 +245,7 @@ fun FileTree(
                     item {
                         FileNodeView(
                             node = root,
+                            gitStatus = gitStatus,
                             toggleNode = fileTreeViewModel::onNodeClick,
                             isDirty = fileTreeViewModel::isFileDirty,
                             selectedFile = selectedFile,
@@ -266,6 +268,9 @@ fun FileTree(
                                 showDeleteDialogFile = file
                             },
                             isRoot = true,
+                            root = root.file.absolutePath,
+                            onStage = fileTreeViewModel::stageFile,
+                            onUnStage = fileTreeViewModel::unstageFile,
                         )
                     }
                 }
@@ -278,8 +283,12 @@ fun FileTree(
 @Composable
 fun FileNodeView(
     node: FileNode,
+    root: String,
+    gitStatus: GitFileStatus,
     toggleNode: (FileNode) -> Unit,
     isDirty: (path: String) -> Boolean,
+    onStage: (relativePath: String) -> Unit,
+    onUnStage: (relativePath: String) -> Unit,
     selectedFile: File?,
     onFileSelect: (File) -> Unit,
     level: Int = 0,
@@ -293,10 +302,16 @@ fun FileNodeView(
 
     ContextMenuArea(
         items = {
-            listOf(
-                ContextMenuItem("New File") { onCreateFile(node.file) },
-                ContextMenuItem("New Folder") { onCreateFolder(node.file) },
-            ).let { items ->
+            buildList {
+                ContextMenuItem("New File") { onCreateFile(node.file) }.let(::add)
+                ContextMenuItem("New Folder") { onCreateFolder(node.file) }.let(::add)
+                if(node.file.isDirectory.not() && node.file.relativeToRoot(root) in gitStatus.untracked) {
+                    ContextMenuItem("Stage File") { onStage(node.file.relativeToRoot(root)) }.let(::add)
+                }
+                if(node.file.isDirectory.not() && node.file.relativeToRoot(root) in gitStatus.added) {
+                    ContextMenuItem("Unstage File") { onUnStage(node.file.relativeToRoot(root)) }.let(::add)
+                }
+            }.let { items ->
                 if (!isRoot) {
                     items + ContextMenuItem("Delete") { onDeleteFile(node.file) }
                 } else {
@@ -356,7 +371,16 @@ fun FileNodeView(
             )
             Text(
                 text = node.file.name.ifEmpty { node.file.path } + if (isDirty(node.file.absolutePath)) Typography.bullet else "",
-                color = if (isSelected) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onBackground,
+                color = if (isSelected) {
+                    MaterialTheme.colorScheme.onPrimaryContainer
+                } else {
+                    when (node.file.relativeToRoot(root)) {
+                        in gitStatus.added -> Color(0xFF7CDE73)
+                        in gitStatus.modified -> Color(0xFF6087C6)
+                        in gitStatus.untracked -> Color(0xFFC67070)
+                        else -> MaterialTheme.colorScheme.onBackground
+                    }
+                },
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )
@@ -368,6 +392,7 @@ fun FileNodeView(
             for (child in node.children) {
                 FileNodeView(
                     node = child,
+                    gitStatus = gitStatus,
                     toggleNode= toggleNode,
                     isDirty = isDirty,
                     selectedFile = selectedFile,
@@ -377,8 +402,14 @@ fun FileNodeView(
                     onCreateFolder = onCreateFolder,
                     onDeleteFile = onDeleteFile,
                     isRoot = false,
+                    onStage = onStage,
+                    onUnStage = onUnStage,
+                    root = root,
                 )
             }
         }
     }
 }
+
+fun File.relativeToRoot(rootPath: String): String =
+    this.absolutePath.removePrefix(rootPath + File.separator)

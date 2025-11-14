@@ -40,6 +40,7 @@ internal class DefaultFileTreeState : FileTreeState, ViewModel() {
     private fun buildFileNode(file: File, isExpanded: Boolean = false): MutableFileNode {
         val children = if (file.isDirectory && isExpanded) {
             file.listFiles()
+                ?.filterNot { it.isDirectory && it.name == ".git" }
                 ?.sortedWith(compareBy({ !it.isDirectory }, { it.name }))
                 ?.map { buildFileNode(it, isExpanded = false) }
                 ?: emptyList()
@@ -82,6 +83,7 @@ internal class DefaultFileTreeState : FileTreeState, ViewModel() {
 
         val currentChildren = node.children.toList()
         val actualFiles = node.file.listFiles()
+            ?.filterNot { it.isDirectory && it.name == ".git" }
             ?.sortedWith(compareBy({ !it.isDirectory }, { it.name }))
             ?: emptyList()
 

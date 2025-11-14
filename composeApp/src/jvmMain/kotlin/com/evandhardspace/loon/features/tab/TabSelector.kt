@@ -14,7 +14,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import com.evandhardspace.loon.features.filetree.relativeToRoot
+import com.evandhardspace.loon.features.vcs.GitFileStatus
 import com.evandhardspace.loon.keyhandler.AppKeyEvent
 import com.evandhardspace.loon.keyhandler.handleKeyEvent
 import java.io.File

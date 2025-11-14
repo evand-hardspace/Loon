@@ -25,6 +25,8 @@ import androidx.compose.ui.input.pointer.PointerIcon
 import androidx.compose.ui.input.pointer.onPointerEvent
 import androidx.compose.ui.input.pointer.pointerHoverIcon
 import androidx.compose.ui.unit.dp
+import com.evandhardspace.loon.features.filetree.relativeToRoot
+import com.evandhardspace.loon.features.vcs.GitFileStatus
 import com.evandhardspace.loon.keyhandler.AppKeyEvent
 import com.evandhardspace.loon.keyhandler.handleKeyEvent
 import org.jetbrains.skiko.Cursor
@@ -35,6 +37,8 @@ import java.io.File
 fun TabPanel(
     modifier: Modifier = Modifier,
     tabs: List<File>,
+    root: String,
+    gitStatus: GitFileStatus,
     isDirty: (File) -> Boolean,
     selectedTab: File?,
     onTabClick: (File) -> Unit,
@@ -86,7 +90,12 @@ fun TabPanel(
 
                         Text(
                             text = file.name,
-                            color = MaterialTheme.colorScheme.onPrimary,
+                            color = when (file.relativeToRoot(root)) {
+                                in gitStatus.added -> Color(0xFF7CDE73)
+                                in gitStatus.modified -> Color(0xFF6087C6)
+                                in gitStatus.untracked -> Color(0xFFC67070)
+                                else -> MaterialTheme.colorScheme.onPrimary
+                            },
                             modifier = Modifier.padding(end = 4.dp)
                         )
                         Icon(

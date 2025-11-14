@@ -36,6 +36,7 @@ kotlin {
             implementation(compose.desktop.currentOs)
             implementation(libs.pty4j)
             implementation(libs.kotlinx.coroutinesSwing)
+            implementation("org.eclipse.jgit:org.eclipse.jgit:3.5.0.201409260305-r")
         }
     }
 }

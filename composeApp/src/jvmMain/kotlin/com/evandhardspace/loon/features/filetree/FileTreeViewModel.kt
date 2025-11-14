@@ -2,12 +2,21 @@ package com.evandhardspace.loon.features.filetree
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.evandhardspace.loon.features.vcs.GitFileStatus
+import com.evandhardspace.loon.features.vcs.GitRepository
+import com.evandhardspace.loon.features.vcs.GitWatcher
 import com.evandhardspace.loon.presentation.state.DirtyFilesState
 import com.evandhardspace.loon.presentation.state.FileNode
 import com.evandhardspace.loon.presentation.state.FileTreeState
 import com.evandhardspace.loon.presentation.state.SelectedFileState
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.filterNotNull
+import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.io.File
 import java.nio.file.FileSystems
@@ -17,13 +26,18 @@ class FileTreeViewModel(
     private val selectedFileState: SelectedFileState,
     private val dirtyFilesState: DirtyFilesState,
     private val fileTreeState: FileTreeState,
+    private val gitRepository: GitRepository,
+    private val gitWatcher: GitWatcher,
 ) : ViewModel() {
 
     private lateinit var root: File
-    private var job: Job? = null
+    private var fileWatcherJob: Job? = null
 
     val rootNode: FileNode?
         get() = fileTreeState.rootNode
+
+    private val _gitStatus = MutableStateFlow(GitFileStatus())
+    val gitStatus = _gitStatus.asStateFlow()
 
     fun initialize(root: File) {
         this.root = root
@@ -36,8 +50,8 @@ class FileTreeViewModel(
             StandardWatchEventKinds.ENTRY_MODIFY
         ) // todo: move to presentation layer
 
-        job?.cancel()
-        job = viewModelScope.launch(Dispatchers.IO) {
+        fileWatcherJob?.cancel()
+        fileWatcherJob = viewModelScope.launch(Dispatchers.IO) {
                 while (true) {
                     val key = watchService.take()
                     key.pollEvents()
@@ -45,6 +59,22 @@ class FileTreeViewModel(
                     refreshRootNode()
                 }
         }
+
+        gitWatcher
+            .watchGitChanges()
+            .filterNotNull()
+            .onEach { status ->
+                _gitStatus.update { status }
+            }
+            .launchIn(viewModelScope)
+    }
+
+    fun stageFile(relativePath: String) {
+        gitRepository.stageFile(relativePath)
+    }
+
+    fun unstageFile(relativePath: String) {
+        gitRepository.unstageFile(relativePath)
     }
 
     private fun refreshRootNode() {
