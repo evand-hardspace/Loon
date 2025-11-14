@@ -137,6 +137,7 @@ class KotlinTextEditorHolder(
                             if (textWithBracket == initialSnapshot) updateIsDirty(false)
                             return
                         }
+
                         '{' -> {
                             val textWithBracket = newText.text.substring(0, insertPos + 1) + '}' +
                                     newText.text.substring(insertPos + 1)
@@ -163,7 +164,8 @@ class KotlinTextEditorHolder(
 
                     // Check if we should auto-delete closing bracket
                     if ((deletedChar == '(' && deletePos + 1 < oldText.length && oldText[deletePos + 1] == ')') ||
-                        (deletedChar == '{' && deletePos + 1 < oldText.length && oldText[deletePos + 1] == '}')) {
+                        (deletedChar == '{' && deletePos + 1 < oldText.length && oldText[deletePos + 1] == '}')
+                    ) {
 
                         // Check if this closing bracket was auto-added (not originally in initialSnapshot)
                         val textWithoutBoth = newText.text.substring(0, deletePos) +
@@ -223,26 +225,63 @@ class KotlinTextEditorHolder(
     }
 
     private fun highlightKotlinSyntax(text: String): AnnotatedString {
-        val keywords = setOf(
+        val hardKeywords = setOf(
             "package", "import", "class", "interface", "fun", "val", "var",
             "if", "else", "when", "for", "while", "do", "return", "break",
-            "continue", "object", "companion", "data", "sealed", "enum",
-            "abstract", "open", "override", "final", "private", "protected",
-            "public", "internal", "in", "out", "by", "get", "set",
-            "try", "catch", "finally", "throw", "throws", "is", "as",
-            "this", "super", "null", "true", "false", "const", "lateinit",
-            "suspend", "inline", "noinline", "crossinline", "reified",
-            "operator", "infix", "tailrec", "external", "annotation",
-            "vararg", "expect", "actual", "init", "constructor"
+            "continue", "object", "companion", "abstract", "open", "override",
+            "final", "private", "protected", "public", "internal", "in", "out",
+            "by", "get", "set", "try", "catch", "finally", "throw", "throws",
+            "is", "as", "this", "super", "null", "true", "false", "const",
+            "lateinit", "suspend", "inline", "noinline", "crossinline", "reified",
+            "operator", "infix", "tailrec", "external", "annotation", "vararg",
+            "expect", "actual", "init", "constructor"
         )
+
+        val softKeywords = setOf("data", "sealed", "enum")
 
         val keywordColor = Color(0xFFCC7832) // Orange
         val stringColor = Color(0xFF6A8759) // Green
+        val interpolationColor = keywordColor // Color(0xFF287BDE) // Blue for $ symbol
         val commentColor = Color(0xFF808080) // Gray
-        val annotationColor = Color(0xFFC6B724) // Gray
+        val annotationColor = Color(0xFFC6B724) // Yellow
         val numberColor = Color(0xFF6897BB) // Blue
 
         return buildAnnotatedString {
+            fun highlightCode(code: String) {
+                var i = 0
+                while (i < code.length) {
+                    when {
+                        // Number
+                        code[i].isDigit() -> {
+                            val start = i
+                            while (i < code.length && (code[i].isDigit() || code[i] in ".xXfFdDlL")) i++
+                            withStyle(SpanStyle(color = numberColor)) {
+                                append(code.substring(start, i))
+                            }
+                        }
+                        // Identifier or keyword
+                        code[i].isLetter() || code[i] == '_' -> {
+                            val start = i
+                            while (i < code.length && (code[i].isLetterOrDigit() || code[i] == '_')) i++
+                            val word = code.substring(start, i)
+
+                            if (word in hardKeywords) {
+                                withStyle(SpanStyle(color = keywordColor)) {
+                                    append(word)
+                                }
+                            } else {
+                                append(word)
+                            }
+                        }
+
+                        else -> {
+                            append(code[i])
+                            i++
+                        }
+                    }
+                }
+            }
+
             var i = 0
             while (i < text.length) {
                 when {
@@ -263,25 +302,85 @@ class KotlinTextEditorHolder(
                         }
                         i = end
                     }
-                    // Single-line comment
-                    text.startsWith("@", i) -> {
-                        val end = text.substring(i).indexOfFirst { it == ' ' || it == '\n' }.let { if (it == -1) text.length else it }
-                        withStyle(SpanStyle(color = annotationColor)) {
-                            append(text.substring(i, end))
-                        }
-                        i = end
-                    }
-                    // String literal
-                    text[i] == '"' -> {
+                    // Annotation
+                    text[i] == '@' && (i == 0 || !text[i - 1].isLetterOrDigit()) -> {
                         val start = i
-                        i++
-                        while (i < text.length && text[i] != '"') {
-                            if (text[i] == '\\' && i + 1 < text.length) i++
+                        i++ // Skip '@'
+                        while (i < text.length && (text[i].isLetterOrDigit() || text[i] == '_' || text[i] == '.')) {
                             i++
                         }
-                        if (i < text.length) i++
-                        withStyle(SpanStyle(color = stringColor)) {
+                        withStyle(SpanStyle(color = annotationColor)) {
                             append(text.substring(start, i))
+                        }
+                    }
+                    // String literal with interpolation
+                    text[i] == '"' -> {
+                        withStyle(SpanStyle(color = stringColor)) {
+                            append('"')
+                        }
+                        i++ // Skip opening quote
+
+                        while (i < text.length && text[i] != '"') {
+                            when {
+                                // Escaped character
+                                text[i] == '\\' && i + 1 < text.length -> {
+                                    withStyle(SpanStyle(color = stringColor)) {
+                                        append(text.substring(i, i + 2))
+                                    }
+                                    i += 2
+                                }
+                                // String interpolation with braces: ${...}
+                                text[i] == '$' && i + 1 < text.length && text[i + 1] == '{' -> {
+                                    withStyle(SpanStyle(color = interpolationColor)) {
+                                        append($$"${")
+                                    }
+                                    i += 2 // Skip "${"
+
+                                    var braceCount = 1
+                                    val interpStart = i
+                                    while (i < text.length && braceCount > 0) {
+                                        if (text[i] == '{') braceCount++
+                                        else if (text[i] == '}') braceCount--
+                                        if (braceCount > 0) i++
+                                    }
+
+                                    // Highlight the interpolated code
+                                    highlightCode(text.substring(interpStart, i))
+
+                                    if (i < text.length && text[i] == '}') {
+                                        withStyle(SpanStyle(color = interpolationColor)) {
+                                            append('}')
+                                        }
+                                        i++
+                                    }
+                                }
+                                // String interpolation simple: $variable
+                                text[i] == '$' && i + 1 < text.length && (text[i + 1].isLetter() || text[i + 1] == '_') -> {
+                                    withStyle(SpanStyle(color = interpolationColor)) {
+                                        append('$')
+                                    }
+                                    i++ // Skip '$'
+                                    val varStart = i
+                                    while (i < text.length && (text[i].isLetterOrDigit() || text[i] == '_')) {
+                                        i++
+                                    }
+                                    append(text.substring(varStart, i))
+                                }
+
+                                else -> {
+                                    withStyle(SpanStyle(color = stringColor)) {
+                                        append(text[i])
+                                    }
+                                    i++
+                                }
+                            }
+                        }
+
+                        if (i < text.length) {
+                            withStyle(SpanStyle(color = stringColor)) {
+                                append('"')
+                            }
+                            i++ // Skip closing quote
                         }
                     }
                     // Character literal
@@ -310,7 +409,21 @@ class KotlinTextEditorHolder(
                         val start = i
                         while (i < text.length && (text[i].isLetterOrDigit() || text[i] == '_')) i++
                         val word = text.substring(start, i)
-                        if (word in keywords) {
+
+                        val shouldHighlight = if (word in softKeywords) {
+                            // Check if next non-whitespace token is "class", "interface", or "object"
+                            var j = i
+                            while (j < text.length && text[j].isWhitespace()) j++
+                            val nextWordStart = j
+                            while (j < text.length && (text[j].isLetterOrDigit() || text[j] == '_')) j++
+                            val nextWord = if (j > nextWordStart) text.substring(nextWordStart, j) else ""
+
+                            nextWord in setOf("class", "interface", "object")
+                        } else {
+                            word in hardKeywords
+                        }
+
+                        if (shouldHighlight) {
                             withStyle(SpanStyle(color = keywordColor)) {
                                 append(word)
                             }
@@ -318,6 +431,7 @@ class KotlinTextEditorHolder(
                             append(word)
                         }
                     }
+
                     else -> {
                         append(text[i])
                         i++
