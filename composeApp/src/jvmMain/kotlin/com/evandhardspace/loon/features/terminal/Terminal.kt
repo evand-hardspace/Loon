@@ -50,13 +50,14 @@ fun Terminal(
     startDirectory: String,
     onToggleVisibility: (isExpanded: Boolean) -> Unit,
 ) {
-    var output by remember { mutableStateOf("") }
-    var input by remember { mutableStateOf("") }
-    var currentPrompt by remember { mutableStateOf("") }
+    // Terminal state
+    var terminalHistory by remember { mutableStateOf("") }
+    var currentInput by remember { mutableStateOf("") }
     var currentDirectory by remember { mutableStateOf(startDirectory) }
-    var refreshTrigger by remember { mutableStateOf(0) }
     var isExpanded by remember { mutableStateOf(false) }
+    var refreshTrigger by remember { mutableStateOf(0) }
 
+    // PTY process references
     var process: PtyProcess? by remember { mutableStateOf(null) }
     var writer: OutputStreamWriter? by remember { mutableStateOf(null) }
 
@@ -65,45 +66,56 @@ fun Terminal(
     val horizontalScrollState = rememberScrollState()
     val focusRequester = remember { FocusRequester() }
 
+    // User info
+    val username = remember { System.getProperty("user.name") }
+    val homeDir = remember { System.getProperty("user.home") }
+
+    // Display path with ~ substitution
+    val displayPath = remember(currentDirectory, homeDir) {
+        if (currentDirectory.startsWith(homeDir)) {
+            "~" + currentDirectory.substring(homeDir.length)
+        } else {
+            currentDirectory
+        }
+    }
+
+    // Keyboard shortcut handler
     handleKeyEvent<AppKeyEvent.ToggleTerminal>("terminal") {
         isExpanded = !isExpanded
         onToggleVisibility(isExpanded)
         true
     }
 
-    // Auto-scroll to bottom when output changes
-    LaunchedEffect(output) {
+    // Auto-scroll to bottom when history changes
+    LaunchedEffect(terminalHistory) {
         verticalScrollState.animateScrollTo(verticalScrollState.maxValue)
     }
 
-    // Initialize PTY process
+    // Initialize and manage PTY process
     LaunchedEffect(refreshTrigger) {
-        // Clean up previous process if exists
+        // Cleanup previous process
         process?.destroy()
-        output = ""
-        input = ""
+        terminalHistory = ""
+        currentInput = ""
         currentDirectory = startDirectory
 
         withContext(Dispatchers.IO) {
+            // Determine shell based on OS
             val shell = if (System.getProperty("os.name").contains("Windows")) {
                 arrayOf("cmd.exe")
             } else {
                 arrayOf("/bin/bash", "-i")
             }
 
+            // Configure environment
             val env = System.getenv().toMutableMap()
-            env["TERM"] = "dumb"  // Use dumb terminal to avoid escape sequences
-
-            // Set custom prompt that matches the input field display
-            // Use \u for username, \w for path with ~ substitution
-            val username = System.getProperty("user.name")
-            env["PS1"] = "\\u:\\w\\$ "
-            env["PS2"] = "> "  // Continuation prompt for multiline commands
-
-            // Disable bash history and other features
+            env["TERM"] = "dumb"
+            env["PS1"] = ""  // Disable shell prompt - we'll show our own
+            env["PS2"] = ""
             env["HISTFILE"] = ""
             env["BASH_SILENCE_DEPRECATION_WARNING"] = "1"
 
+            // Start PTY process
             val ptyProcess = PtyProcessBuilder()
                 .setCommand(shell)
                 .setEnvironment(env)
@@ -113,8 +125,12 @@ fun Terminal(
             process = ptyProcess
             writer = OutputStreamWriter(ptyProcess.outputStream)
 
+            writer?.write("stty -echo\n")
+            writer?.flush()
+
+            // Read output in background
             val reader = InputStreamReader(ptyProcess.inputStream)
-            val buffer = CharArray(1024)
+            val buffer = CharArray(8192)
 
             try {
                 while (true) {
@@ -123,44 +139,77 @@ fun Terminal(
 
                     var text = String(buffer, 0, charsRead)
 
-                    // Filter out ANSI escape sequences
+                    // Remove ANSI escape sequences
                     text = text.replace(Regex("\u001B\\[[0-9;]*[a-zA-Z]"), "")
                     text = text.replace(Regex("\u001B\\][0-9;]*.*?\u0007"), "")
                     text = text.replace(Regex("\\[\\?[0-9]+[a-z]"), "")
 
                     withContext(Dispatchers.Main) {
-                        // Extract current directory from prompt
-                        // Look for patterns like "username:path$ " to update currentDirectory
-                        val promptPattern = Regex("([^:]+):([^$]+)\\$")
-                        val match = promptPattern.find(text)
-                        if (match != null) {
-                            val path = match.groupValues[2]
-                            val homeDir = System.getProperty("user.home")
-                            currentDirectory = if (path.startsWith("~")) {
-                                homeDir + path.substring(1)
-                            } else {
-                                path
-                            }
-                        }
-
-                        output += text
+                        terminalHistory += text
                     }
                 }
             } catch (e: Exception) {
                 withContext(Dispatchers.Main) {
-                    output += "\n[Process terminated: ${e.message}]"
+                    terminalHistory += "\n[Process terminated: ${e.message}]\n"
                 }
             }
         }
 
-        // Request focus for input
+        // Focus input field
         focusRequester.requestFocus()
     }
 
+    // Cleanup on dispose
     DisposableEffect(Unit) {
         onDispose {
             process?.destroy()
         }
+    }
+
+    // Command execution handler
+    fun executeCommand(command: String) {
+        if (command.isBlank()) return
+
+        // Add command to history with prompt
+        terminalHistory += "$username:$displayPath\$ $command\n"
+
+        // Handle built-in commands
+        when {
+            command.trim().startsWith("cd ") -> {
+                val newPath = command.trim().substring(3).trim()
+                val targetDir = when {
+                    newPath == "~" -> homeDir
+                    newPath.startsWith("~/") -> homeDir + newPath.substring(1)
+                    newPath.startsWith("/") -> newPath
+                    else -> "$currentDirectory/$newPath"
+                }
+
+                // Normalize path
+                val file = java.io.File(targetDir)
+                if (file.exists() && file.isDirectory) {
+                    currentDirectory = file.canonicalPath
+                    // Send cd command to shell as well
+                    scope.launch(Dispatchers.IO) {
+                        writer?.write("cd \"$targetDir\"\n")
+                        writer?.flush()
+                    }
+                } else {
+                    terminalHistory += "cd: no such file or directory: $newPath\n"
+                }
+            }
+            command.trim() == "clear" -> {
+                terminalHistory = ""
+            }
+            else -> {
+                // Send command to PTY process
+                scope.launch(Dispatchers.IO) {
+                    writer?.write("$command\n")
+                    writer?.flush()
+                }
+            }
+        }
+
+        currentInput = ""
     }
 
     Column(
@@ -168,7 +217,7 @@ fun Terminal(
             .fillMaxSize()
             .background(Color(0xFF1E1E1E))
     ) {
-        // Header with refresh button
+        // Header
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -186,9 +235,7 @@ fun Terminal(
 
             Row {
                 IconButton(
-                    onClick = {
-                        refreshTrigger++
-                    },
+                    onClick = { refreshTrigger++ },
                     modifier = Modifier.size(24.dp)
                 ) {
                     Icon(
@@ -208,7 +255,7 @@ fun Terminal(
                 ) {
                     Icon(
                         imageVector = if (isExpanded) Icons.Default.KeyboardArrowDown else Icons.Default.KeyboardArrowUp,
-                        contentDescription = if (isExpanded) "Collapse Terminal" else "Expand Terminal",
+                        contentDescription = if (isExpanded) "Collapse" else "Expand",
                         tint = Color(0xFFCCCCCC),
                         modifier = Modifier.size(20.dp)
                     )
@@ -216,8 +263,9 @@ fun Terminal(
             }
         }
 
-        // Terminal output area
-        if (isExpanded.not()) return
+        if (!isExpanded) return
+
+        // Terminal output area with scrollbars
         Box(
             modifier = Modifier
                 .weight(1f)
@@ -231,17 +279,12 @@ fun Terminal(
                         .verticalScroll(verticalScrollState)
                         .horizontalScroll(horizontalScrollState)
                 ) {
-                    // Remove trailing prompt from display
-                    val displayOutput = remember(output) {
-                        // Remove the last prompt if it's there
-                        val promptPattern = """[\w.]+:[^\$]+\$\s*$""".toRegex()
-                        output.replace(promptPattern, "")
-                    }
-
                     Column {
                         Spacer(Modifier.height(12.dp))
                         Text(
-                            text = displayOutput,
+                            text = if(terminalHistory.startsWith("stty -echo") && terminalHistory.length >= 24) {
+                                terminalHistory.substring(24)
+                            } else terminalHistory, // fixme
                             color = Color(0xFFCCCCCC),
                             fontFamily = FontFamily.Monospace,
                             fontSize = 14.sp,
@@ -279,22 +322,15 @@ fun Terminal(
             )
         }
 
-        // Input field with prompt and cursor
+        // Input area with prompt
         Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .background(Color(0xFF1E1E1E))
-                .padding(horizontal = 12.dp, vertical = 8.dp)
+                .padding(horizontal = 12.dp, vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            // Display username and current directory
-            val username = System.getProperty("user.name")
-            val homeDir = System.getProperty("user.home")
-            val displayPath = if (currentDirectory.startsWith(homeDir)) {
-                "~" + currentDirectory.substring(homeDir.length)
-            } else {
-                currentDirectory
-            }
-
+            // Prompt: username:path$
             Text(
                 text = "$username:$displayPath\$ ",
                 color = Color(0xFF2C83AA),
@@ -303,30 +339,23 @@ fun Terminal(
                 fontSize = 14.sp
             )
 
+            // Input field
             BasicTextField(
-                value = input,
+                value = currentInput,
                 onValueChange = { newValue ->
-                    // Check if newline was entered (command submitted)
+                    // Handle Enter key
                     if (newValue.contains("\n") || newValue.contains("\r")) {
-                        val command = input.trim()
-                        // Only send non-empty commands
-                        if (command.isNotEmpty()) {
-                            scope.launch(Dispatchers.IO) {
-                                writer?.write(command + "\n")
-                                writer?.flush()
-                            }
-                        }
-                        input = ""
+                        executeCommand(currentInput)
                     } else {
-                        input = newValue
+                        currentInput = newValue
                     }
                 },
                 textStyle = TextStyle(
-                    color = MaterialTheme.colorScheme.onBackground,
+                    color = Color(0xFFCCCCCC),
                     fontFamily = FontFamily.Monospace,
                     fontSize = 14.sp
                 ),
-                cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
+                cursorBrush = SolidColor(Color(0xFF2C83AA)),
                 keyboardOptions = KeyboardOptions(
                     imeAction = ImeAction.Done,
                     keyboardType = KeyboardType.Text
