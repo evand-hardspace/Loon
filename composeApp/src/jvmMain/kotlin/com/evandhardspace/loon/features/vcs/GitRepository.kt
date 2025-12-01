@@ -1,13 +1,21 @@
 package com.evandhardspace.loon.features.vcs
 
+import com.evandhardspace.loon.features.filetree.relativeToRoot
+import com.evandhardspace.loon.presentation.state.GitStatus
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import org.eclipse.jgit.api.Git
 import org.eclipse.jgit.api.Status
 import org.eclipse.jgit.lib.Repository
@@ -29,13 +37,17 @@ data class GitFileStatus(
     val removed: Set<String> = emptySet(),
     val missing: Set<String> = emptySet(),
     val conflicting: Set<String> = emptySet(),
-    val isGitRepository: Boolean = true
+    val isGitRepository: Boolean = true,
 )
 
 // Repository for Git operations
 class GitRepository(private val repoPath: String) {
     private var git: Git? = null
     private var repository: Repository? = null
+    private val _latestGitStatus: MutableStateFlow<GitFileStatus?> = MutableStateFlow(null)
+    val latestGitStatus = _latestGitStatus.asStateFlow()
+
+    private val mutex = Mutex()
 
     init {
         openRepository()
@@ -65,12 +77,23 @@ class GitRepository(private val repoPath: String) {
         return git != null && repository != null
     }
 
-    fun reinitialize() {
+    fun getStatus(file: File, root: String?): GitStatus? {
+        if(root == null) return null
+        val latest = latestGitStatus.value ?: return null
+        return when(file.relativeToRoot(root)) {
+            in latest.added -> GitStatus.Added
+            in latest.untracked -> GitStatus.Untracked
+            in latest.modified -> GitStatus.Modified
+            else -> null
+        }
+    }
+
+    suspend fun reinitialize() {
         close()
         openRepository()
     }
 
-    fun stageFile(relativePath: String) {
+    suspend fun stageFile(relativePath: String) = mutex.withLock {
         try {
             git?.add()?.addFilepattern(relativePath)?.call()
             println("Added file to staging: $relativePath")
@@ -79,7 +102,7 @@ class GitRepository(private val repoPath: String) {
         }
     }
 
-    fun unstageFile(relativePath: String) {
+    suspend fun unstageFile(relativePath: String) = mutex.withLock {
         try {
             git?.reset()?.addPath(relativePath)?.call()
             println("Removed file from staging: $relativePath")
@@ -88,31 +111,39 @@ class GitRepository(private val repoPath: String) {
         }
     }
 
-    fun getStatus(): GitFileStatus? {
+    suspend fun getStatus(): GitFileStatus? = mutex.withLock {
         if (!isInitialized()) {
-            return GitFileStatus(isGitRepository = false)
+            _latestGitStatus.update { GitFileStatus(isGitRepository = false) }
+            return _latestGitStatus.value
         }
 
-        return try {
-            val status: Status = git?.status()?.call() ?: return GitFileStatus(isGitRepository = false)
+        try {
+            val status: Status = git?.status()?.call() ?: run {
+                _latestGitStatus.update { GitFileStatus(isGitRepository = false) }
+                return _latestGitStatus.value
+            }
 
-            GitFileStatus(
-                added = status.added,
-                changed = status.changed,
-                untracked = status.untracked,
-                modified = status.modified,
-                removed = status.removed,
-                missing = status.missing,
-                conflicting = status.conflicting,
-                isGitRepository = true
-            )
+            _latestGitStatus.update {
+                GitFileStatus(
+                    added = status.added,
+                    changed = status.changed,
+                    untracked = status.untracked,
+                    modified = status.modified,
+                    removed = status.removed,
+                    missing = status.missing,
+                    conflicting = status.conflicting,
+                    isGitRepository = true
+                )
+            }
+            return _latestGitStatus.value
         } catch (e: Exception) {
             println("Error getting status: ${e.message}")
-            GitFileStatus(isGitRepository = false)
+            _latestGitStatus.update { GitFileStatus(isGitRepository = false) }
+            return _latestGitStatus.value
         }
     }
 
-    fun close() {
+    suspend fun close() = mutex.withLock {
         try {
             git?.close()
             repository?.close()
@@ -280,7 +311,7 @@ class GitWatcher(
                     println("Error canceling key: ${e.message}")
                 }
             }
-            gitRepo.close()
+            runBlocking { gitRepo.close() }
             watchService.close()
             println("Git watcher closed")
         }

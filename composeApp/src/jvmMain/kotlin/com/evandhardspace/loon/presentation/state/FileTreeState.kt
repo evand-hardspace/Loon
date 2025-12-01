@@ -7,6 +7,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.evandhardspace.loon.features.vcs.GitRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
@@ -26,7 +27,9 @@ interface FileTreeState : State {
     fun toggleNode(node: FileNode)
 }
 
-internal class DefaultFileTreeState : FileTreeState, ViewModel() {
+internal class DefaultFileTreeState(
+    private val gitRepository: GitRepository,
+) : FileTreeState, ViewModel() {
     override var rootNode: MutableFileNode? by mutableStateOf(null)
         private set
 
@@ -37,7 +40,10 @@ internal class DefaultFileTreeState : FileTreeState, ViewModel() {
         rootNode = buildFileNode(root, isExpanded = true)
     }
 
-    private fun buildFileNode(file: File, isExpanded: Boolean = false): MutableFileNode {
+    private fun buildFileNode(
+        file: File,
+        isExpanded: Boolean = false,
+    ): MutableFileNode {
         val children = if (file.isDirectory && isExpanded) {
             file.listFiles()
                 ?.filterNot { it.isDirectory && it.name == ".git" }
@@ -51,7 +57,8 @@ internal class DefaultFileTreeState : FileTreeState, ViewModel() {
         return MutableFileNode(
             file = file,
             isExpanded = isExpanded,
-            children = children
+            children = children,
+            gitRepository.getStatus(file, rootNode?.file?.absolutePath)
         )
     }
 
@@ -61,7 +68,11 @@ internal class DefaultFileTreeState : FileTreeState, ViewModel() {
                 parentNode.file.parentFile ?: error("no parent file")
             )
             parent?.let {
-                val newNode = MutableFileNode(newFile, isExpanded = false)
+                val newNode = MutableFileNode(
+                    file = newFile,
+                    isExpanded = false,
+                    gitStatus = gitRepository.getStatus(newFile, rootNode!!.file.absolutePath)
+                )
                 it.addChild(newNode, sort = true)
             }
         }
@@ -97,7 +108,14 @@ internal class DefaultFileTreeState : FileTreeState, ViewModel() {
         // Add new children
         actualFiles.forEach { file ->
             if (currentChildren.none { it.file == file }) {
-                node.addChild(MutableFileNode(file, isExpanded = false), sort = false)
+                node.addChild(
+                    MutableFileNode(
+                        file = file,
+                        gitStatus = gitRepository.getStatus(file, rootNode!!.file.absolutePath),
+                        isExpanded = false,
+                    ),
+                    sort = false,
+                )
             }
         }
 
@@ -154,14 +172,21 @@ interface FileNode {
     val file: File
     val isExpanded: Boolean
     val children: List<FileNode>
+    val gitStatus: GitStatus?
+}
+
+enum class GitStatus {
+    Added, Modified, Untracked
 }
 
 class MutableFileNode(
     override val file: File,
     isExpanded: Boolean = false,
     children: List<MutableFileNode> = emptyList(),
+    gitStatus: GitStatus?,
 ) : FileNode {
     override var isExpanded by mutableStateOf(isExpanded)
+    override val gitStatus: GitStatus? by mutableStateOf(gitStatus)
 
     private val _children = mutableStateListOf<MutableFileNode>().apply { addAll(children) }
     override val children: List<MutableFileNode> = _children

@@ -70,11 +70,11 @@ class FileTreeViewModel(
     }
 
     fun stageFile(relativePath: String) {
-        gitRepository.stageFile(relativePath)
+        viewModelScope.launch { gitRepository.stageFile(relativePath) }
     }
 
     fun unstageFile(relativePath: String) {
-        gitRepository.unstageFile(relativePath)
+        viewModelScope.launch { gitRepository.unstageFile(relativePath) }
     }
 
     private fun refreshRootNode() {

@@ -4,6 +4,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.evandhardspace.loon.features.vcs.GitRepository
 
 @Composable
 inline fun <reified S> state(
@@ -14,12 +15,13 @@ inline fun <reified S> state(
 
 @Composable
 fun ProvideStates(
+    selectedPath: String,
     content: @Composable () -> Unit,
 ) {
     val dirtyFilesState: DirtyFilesState = state { DefaultDirtyFilesState() }
     val selectedFileState: SelectedFileState = state { DefaultSelectedFileState() }
     val tabsState: TabsState = state { DefaultTabsState() }
-    val fileTreeState: FileTreeState = state { DefaultFileTreeState() }
+    val fileTreeState: FileTreeState = state { DefaultFileTreeState(GitRepository(selectedPath)) }
 
     CompositionLocalProvider(
         LocalDirtyFilesState provides dirtyFilesState,

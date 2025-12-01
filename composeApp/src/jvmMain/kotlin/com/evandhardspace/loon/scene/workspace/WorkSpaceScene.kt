@@ -46,7 +46,7 @@ fun WorkSpaceScene(
     modifier: Modifier = Modifier,
 ) {
 
-    ProvideStates {
+    ProvideStates(selectedPath) {
         val fileTreeViewModel = viewModelWithState {
             val gitRepo = GitRepository(selectedPath)
             val gitWatcher = GitWatcher(gitRepo, selectedPath)
