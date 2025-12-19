@@ -1,46 +1,25 @@
 import org.jetbrains.compose.desktop.application.dsl.TargetFormat
-import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
-    alias(libs.plugins.kotlinMultiplatform)
-    alias(libs.plugins.composeMultiplatform)
-    alias(libs.plugins.composeCompiler)
-    alias(libs.plugins.composeHotReload)
+    id("compose-common")
     alias(libs.plugins.serialization)
 }
 
 kotlin {
-    jvm()
-
-    compilerOptions {
-        freeCompilerArgs.set(listOf("-Xcontext-parameters"))
-    }
-
     sourceSets {
         commonMain.dependencies {
-            implementation(compose.runtime)
-            implementation(compose.foundation)
-            implementation(compose.material3)
-            implementation(compose.ui)
-            implementation(compose.components.resources)
-            implementation(compose.components.uiToolingPreview)
-            implementation(libs.androidx.lifecycle.viewmodelCompose)
-            implementation(libs.androidx.lifecycle.runtimeCompose)
-            implementation(libs.navigation)
-            implementation(libs.icons)
-        }
-        commonTest.dependencies {
-            implementation(libs.kotlin.test)
+            implementation(projects.core)
+
+            implementation(libs.compose.components.resources)
+            implementation(libs.compose.navigation)
+            implementation(libs.jgit)
+            implementation(libs.pseudoterminal)
         }
         jvmMain.dependencies {
             implementation(compose.desktop.currentOs)
-            implementation(libs.pty4j)
-            implementation(libs.kotlinx.coroutinesSwing)
-            implementation("org.eclipse.jgit:org.eclipse.jgit:3.5.0.201409260305-r")
         }
     }
 }
-
 
 compose.desktop {
     application {
